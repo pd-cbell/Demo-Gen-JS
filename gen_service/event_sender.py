@@ -3,7 +3,7 @@ import json
 import logging
 import requests
 import time
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 
 PAGERDUTY_API_URL = "https://events.pagerduty.com/v2/enqueue"
 GENERATED_FOLDER = 'generated_files'
@@ -155,3 +155,70 @@ def event_sender():
 def get_files(org):
     files = list_event_files(org)
     return json.dumps(files)
+    
+def event_sender_summary():
+    # Return schedule summary without sending events
+    org = request.form.get('organization')
+    filename = request.form.get('filename')
+    try:
+        events = load_event_file(org, filename)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    schedule_summary = []
+    for ev in events:
+        summary = ev.get('payload', {}).get('summary', '')
+        timing = ev.get('timing_metadata', {}) or {}
+        initial_offset = timing.get('schedule_offset', 0)
+        repeat_schedule = ev.get('repeat_schedule', []) or []
+        total_repeats = sum(int(r.get('repeat_count', 0)) for r in repeat_schedule)
+        total_sends = 1 + total_repeats
+        next_offset = None
+        if repeat_schedule and repeat_schedule[0].get('repeat_offset') is not None:
+            next_offset = repeat_schedule[0].get('repeat_offset')
+        schedule_summary.append({
+            'summary': summary,
+            'initial_offset': initial_offset,
+            'total_repeats': total_repeats,
+            'total_sends': total_sends,
+            'next_offset': next_offset,
+        })
+    return jsonify({'schedule_summary': schedule_summary})
+
+def event_sender_send():
+    # Send events and return results as JSON
+    org = request.form.get('organization')
+    filename = request.form.get('filename')
+    routing_key = request.form.get('routing_key')
+    try:
+        events = load_event_file(org, filename)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    results = []
+    for event in events:
+        timing = event.get('timing_metadata', {}) or {}
+        schedule_offset = timing.get('schedule_offset', 0)
+        repeat_schedule = event.get('repeat_schedule', []) or []
+        if schedule_offset:
+            time.sleep(schedule_offset)
+        payload = prepare_event_payload(event)
+        response = send_event(payload, routing_key)
+        results.append({
+            'summary': event.get('payload', {}).get('summary', 'N/A'),
+            'status_code': response.status_code,
+            'response': response.text,
+            'attempt': 'initial'
+        })
+        for repeat in repeat_schedule:
+            repeat_count = repeat.get('repeat_count', 0)
+            repeat_offset = repeat.get('repeat_offset', 0)
+            for i in range(repeat_count):
+                if repeat_offset:
+                    time.sleep(repeat_offset)
+                resp = send_event(payload, routing_key)
+                results.append({
+                    'summary': event.get('payload', {}).get('summary', 'N/A'),
+                    'status_code': resp.status_code,
+                    'response': resp.text,
+                    'attempt': f'repeat {i+1}'
+                })
+    return jsonify({'results': results})

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, url_for
-from event_sender import event_sender, get_files
+from event_sender import event_sender, get_files, event_sender_summary, event_sender_send
 import os
 import datetime
 import utils
@@ -8,6 +8,8 @@ app = Flask(__name__)
 app.config['GENERATED_FOLDER'] = 'generated_files'
 app.add_url_rule('/get_files/<org>', 'get_files', get_files)
 app.add_url_rule('/event_sender', 'event_sender', event_sender, methods=['GET', 'POST'])
+app.add_url_rule('/event_sender/summary', 'event_sender_summary', event_sender_summary, methods=['POST'])
+app.add_url_rule('/event_sender/send', 'event_sender_send', event_sender_send, methods=['POST'])
 
 # Ensure the main generated_files folder exists
 if not os.path.exists(app.config['GENERATED_FOLDER']):

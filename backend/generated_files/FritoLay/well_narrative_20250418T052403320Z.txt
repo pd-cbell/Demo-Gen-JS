@@ -1,0 +1,24 @@
+**1. Scenario Overview**
+
+At Frito Lay, the company leverages an internal dashboard to monitor real-time sales data across various distribution centers. A low-severity incident occurs when the dashboard experiences a temporary data refresh delay, classified as a P4 incident. This delay does not impact the overall sales operations but requires prompt resolution to maintain data accuracy and user satisfaction.
+
+**2. Incident Narrative**
+
+At 10:15 AM, the monitoring system detects that the sales dashboard’s data refresh rate has dropped below the expected threshold. An automated alert is triggered in PagerDuty, categorizing the issue as a P4 incident due to its minor impact on data visibility. The alert includes relevant metrics and logs indicating a potential timeout in the data aggregator service responsible for pulling sales data from various sources.
+
+**3. Fully Automated Response**
+
+Upon receiving the alert, PagerDuty’s integrated runbook is automatically executed without human intervention. The runbook follows these steps:
+
+- **Step 1:** Verify the health of the data aggregator service by performing a health check API call.
+- **Step 2:** If a timeout is detected, initiate an automated restart of the data aggregator service using predefined scripts.
+- **Step 3:** Clear the cache to eliminate any stale data that might be causing the refresh delay.
+- **Step 4:** Monitor the service for 2 minutes to ensure that the data refresh rate returns to normal levels.
+
+**4. Zero-Touch Resolution**
+
+The automation successfully completes all steps within two minutes of the incident detection. The data aggregator service restarts seamlessly, the cache is cleared, and normal data refresh rates are restored without any manual intervention. PagerDuty updates the incident status to resolved and logs all actions taken for future reference and auditing purposes. Users experience no noticeable disruption, and the dashboard regains full functionality promptly.
+
+**Outage Summary:**
+
+A P4 incident involving a temporary sales dashboard data refresh delay was automatically resolved through PagerDuty’s runbook-driven automation, ensuring zero-touch remediation.

@@ -35,25 +35,46 @@
     </table>
   </div>
   {% endif %}
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Summary</th>
-        <th>Status Code</th>
-        <th>Response</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for res in results %}
-      <tr>
-        <td>{{ res.summary }}</td>
-        <td>{{ res.status_code }}</td>
-        <td>{{ res.response }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <a href="{{ url_for('event_sender') }}" class="btn btn-secondary">Back</a>
+  <!-- Toggle button for detailed results -->
+  <button id="toggleResultsBtn" class="btn btn-primary mt-3">Show Detailed Results</button>
+  <!-- Detailed results section, hidden by default -->
+  <div id="resultsSection" style="display: none; margin-top: 20px;">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Summary</th>
+          <th>Status Code</th>
+          <th>Response</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for res in results %}
+        <tr>
+          <td>{{ res.summary }}</td>
+          <td>{{ res.status_code }}</td>
+          <td>{{ res.response }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <a href="{{ url_for('event_sender') }}" class="btn btn-secondary mt-3">Back</a>
+  <script>
+    // Toggle display of detailed results
+    document.addEventListener('DOMContentLoaded', function() {
+      var btn = document.getElementById('toggleResultsBtn');
+      var section = document.getElementById('resultsSection');
+      btn.addEventListener('click', function() {
+        if (section.style.display === 'none') {
+          section.style.display = 'block';
+          btn.textContent = 'Hide Detailed Results';
+        } else {
+          section.style.display = 'none';
+          btn.textContent = 'Show Detailed Results';
+        }
+      });
+    });
+  </script>
 </div>
 </body>
 </html>
