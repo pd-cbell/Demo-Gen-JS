@@ -1,0 +1,303 @@
+json
+[
+  {
+    "payload": {
+      "summary": "Deployment initiated for new feature in Auth service",
+      "severity": "info",
+      "source": "deployment_system",
+      "component": "Auth",
+      "group": "Deployment",
+      "class": "Feature Launch",
+      "custom_details": {
+        "service_name": "Auth",
+        "deployment_version": "v2.3.1",
+        "environment": "production"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 0
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 60
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Faulty configuration detected in load balancer settings",
+      "severity": "critical",
+      "source": "config_manager",
+      "component": "Load Balancer",
+      "group": "Configuration",
+      "class": "Misconfiguration",
+      "custom_details": {
+        "service_name": "Auth",
+        "major_failure": true,
+        "error_code": "LB-CONFIG-ERR-001"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 150
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 6,
+        "repeat_offset": 45
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Spike in error rates detected across Auth services",
+      "severity": "error",
+      "source": "monitoring_tool",
+      "component": "Auth",
+      "group": "Performance",
+      "class": "Error Rate Spike",
+      "custom_details": {
+        "service_name": "Auth",
+        "error_rate": "15%",
+        "threshold": "5%"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 60
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 4,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Latency increase observed in Auth service responses",
+      "severity": "warning",
+      "source": "performance_monitor",
+      "component": "Auth",
+      "group": "Latency",
+      "class": "Performance Degradation",
+      "custom_details": {
+        "service_name": "Auth",
+        "average_latency_ms": 1200,
+        "threshold_ms": 800
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 90
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 3,
+        "repeat_offset": 60
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Intermittent access issues reported by users",
+      "severity": "warning",
+      "source": "user_reports",
+      "component": "Auth",
+      "group": "User Experience",
+      "class": "Access Issues",
+      "custom_details": {
+        "service_name": "Auth",
+        "user_impact": "High",
+        "reported_instances": 25
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 120
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 50
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Abnormal traffic patterns detected in Auth service",
+      "severity": "critical",
+      "source": "traffic_monitor",
+      "component": "Auth",
+      "group": "Traffic",
+      "class": "Anomaly Detection",
+      "custom_details": {
+        "service_name": "Auth",
+        "traffic_spike": "200%",
+        "source_ips": "Multiple Regions"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 180
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 4,
+        "repeat_offset": 70
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Backlog of requests in load balancer module",
+      "severity": "critical",
+      "source": "load_balancer",
+      "component": "Load Balancer",
+      "group": "Request Handling",
+      "class": "Backlog",
+      "custom_details": {
+        "service_name": "Auth",
+        "pending_requests": 5000,
+        "max_capacity": 1000
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 210
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 3,
+        "repeat_offset": 80
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Cascading failures detected in downstream services",
+      "severity": "critical",
+      "source": "failure_detector",
+      "component": "Auth",
+      "group": "Service Integrity",
+      "class": "Cascading Failure",
+      "custom_details": {
+        "service_name": "Auth",
+        "affected_services": ["Database", "API Gateway", "Notification Service"],
+        "failure_count": 3
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 240
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 2,
+        "repeat_offset": 90
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "System backlog cleared and services restored",
+      "severity": "info",
+      "source": "recovery_system",
+      "component": "Auth",
+      "group": "Recovery",
+      "class": "Service Restoration",
+      "custom_details": {
+        "service_name": "Auth",
+        "recovery_time_ms": 300000,
+        "services_restored": ["Load Balancer", "Database", "API Gateway"]
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 300
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 2,
+        "repeat_offset": 60
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Load balancer configuration issue resolved",
+      "severity": "info",
+      "source": "config_manager",
+      "component": "Load Balancer",
+      "group": "Configuration",
+      "class": "Resolution",
+      "custom_details": {
+        "service_name": "Auth",
+        "resolution_steps": "Reverted to previous configuration",
+        "time_to_resolve_sec": 120
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 330
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 3,
+        "repeat_offset": 50
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Monitoring tools normalized post-incident",
+      "severity": "info",
+      "source": "monitoring_tool",
+      "component": "Auth",
+      "group": "Monitoring",
+      "class": "Normalization",
+      "custom_details": {
+        "service_name": "Auth",
+        "status": "Normal",
+        "post_incident_checks_passed": 10
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 360
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 4,
+        "repeat_offset": 40
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Incident closed and stakeholders notified",
+      "severity": "info",
+      "source": "incident_manager",
+      "component": "Auth",
+      "group": "Closure",
+      "class": "Incident Resolution",
+      "custom_details": {
+        "service_name": "Auth",
+        "notification_methods": ["Email", "SMS"],
+        "time_to_close_sec": 420
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 420
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 1,
+        "repeat_offset": 0
+      }
+    ]
+  }
+]

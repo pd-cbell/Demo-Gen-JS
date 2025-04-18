@@ -1,0 +1,40 @@
+**Scenario Overview:**
+On a bustling Monday morning, Morgan Stanley experiences an unexpected outage in its high-frequency trading (HFT) platform just as global markets open. This disruption threatens millions in transactions, risking financial losses and damaging client trust. The situation demands an immediate, coordinated response to prevent a cascading failure across trading operations.
+
+**Incident Narrative:**
+The incident was triggered when a critical server in the HFT system crashed due to a software glitch following a recent update. Early symptoms included a spike in error rates, delayed trade executions, and system alerts indicating degraded performance. Diagnostic tools quickly identified that the server failure disrupted the data flow between trading algorithms and market exchanges. Root cause analysis revealed that the update introduced a memory leak in the trading engine, leading to the server's instability under high-load conditions.
+
+**The Response:**
+PagerDuty seamlessly detected the anomaly through integrated monitoring tools that flagged the abnormal error rates and system slowdowns. Automated workflows were triggered, immediately notifying the on-call incident response team through multiple channels—SMS, email, and mobile app alerts. PagerDuty’s intelligent escalation policies ensured that the right experts were mobilized without delay. The platform facilitated real-time communication across Morgan Stanley’s IT, DevOps, and trading teams via integrated chat and collaboration tools, enabling a synchronized effort to address the outage.
+
+**The Resolution:**
+Leveraging PagerDuty’s powerful incident management capabilities, Morgan Stanley resolved the HFT platform outage within 15 minutes of detection. The swift resolution minimized financial losses and upheld client confidence. Compliance requirements were met by maintaining comprehensive incident logs and audit trails, essential for regulatory reporting. To prevent future occurrences, PagerDuty’s post-incident analysis tools helped identify the faulty update, enabling the development team to implement a targeted fix and enhance the deployment pipeline with additional safeguards against similar issues.
+
+**Demo Execution:**
+The demonstration highlights PagerDuty’s robust technical infrastructure, showcasing real-time monitoring integrations, automated alerting systems, intelligent incident routing, and seamless collaboration features. Key functionalities include customizable dashboards, granular on-call schedule management, incident timeline visualization, and comprehensive reporting tools. The demo also emphasizes PagerDuty’s scalability and reliability, ensuring it meets the stringent demands of a global financial institution like Morgan Stanley.
+
+**Talk Track for the SC (20-Minute Demo Flow):**
+
+1. **Introduction (2 minutes):**
+   - Briefly introduce PagerDuty and its relevance to Morgan Stanley’s operational resilience.
+   
+2. **Scenario Overview (3 minutes):**
+   - Present the high-impact HFT platform outage scenario, highlighting the potential risks and stakes involved.
+   
+3. **Incident Narrative (4 minutes):**
+   - Detail the sequence of events leading to the outage, symptoms observed, diagnostic process, and root cause identification.
+   
+4. **The Response (4 minutes):**
+   - Demonstrate how PagerDuty detects the incident, automates alerting, mobilizes the response team, and facilitates effective communication.
+   
+5. **The Resolution (3 minutes):**
+   - Explain the resolution process, emphasizing speed, business continuity, compliance adherence, and preventative measures implemented post-incident.
+   
+6. **Demo Execution (3 minutes):**
+   - Showcase key features of PagerDuty’s platform, including dashboard views, alert configurations, and incident management workflows.
+   
+7. **Closing Call-to-Action (1 minute):**
+   - Encourage next steps, such as scheduling a personalized demo, starting a trial, or engaging with a PagerDuty specialist to enhance Morgan Stanley’s incident management strategy.
+
+**Outage Summary:**
+Outage Summary: A critical high-frequency trading platform outage at Morgan Stanley was swiftly resolved within minutes using PagerDuty’s advanced incident management and response solution.

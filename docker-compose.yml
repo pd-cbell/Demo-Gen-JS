@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  gen_service:
+    build:
+      context: ./gen_service
+    container_name: gen_service
+    environment:
+      # OpenAI API key for generation
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "5001:5001"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    environment:
+      # OpenAI API key (passed through) and Python service URL override
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PYTHON_SERVICE_URL=http://gen_service:5001/api/generate
+    ports:
+      - "5002:5002"
+    depends_on:
+      - gen_service
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    environment:
+      # Ensure file watchers work in Docker
+      - CHOKIDAR_USEPOLLING=true
+      - BROWSER=none
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend

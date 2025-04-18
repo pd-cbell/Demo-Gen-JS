@@ -1,0 +1,13 @@
+# Root .gitignore
+# Ignore Node.js modules and cache
+**/node_modules/
+**/.cache/
+
+# Python virtualenv
+venv/
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store

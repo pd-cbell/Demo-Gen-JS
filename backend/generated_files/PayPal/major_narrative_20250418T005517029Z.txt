@@ -1,0 +1,59 @@
+**1. Scenario Overview**
+
+On a bustling Black Friday weekend, PayPal experiences an unexpected surge in transaction volumes. Amidst the high traffic, a critical microservice responsible for processing payments crashes, leading to a widespread outage. Transactions halt globally, causing frustration among millions of users and risking significant revenue loss for merchants relying on PayPal’s platform.
+
+**2. Incident Narrative**
+
+*Trigger Event:* At 12:30 PM GMT on Black Friday, automated monitoring detects a sudden spike in error rates from the payment processing microservice.
+
+*Symptoms:* Users report failed transactions, inability to process payments, and slow page responses. Merchants receive alerts about incomplete sales, and customer support channels are inundated with complaints.
+
+*Diagnostic Findings:* Initial diagnostics pinpoint increased CPU usage and memory leaks in the payment service's latest deployment. Further investigation reveals that a recent code update introduced a defect that fails to handle peak transaction loads effectively.
+
+*Root Cause:* The deployment included a new feature for enhanced fraud detection which, under high load, caused resource exhaustion leading to the crash of the payment processing microservice.
+
+**3. The Response**
+
+*Detection:* PagerDuty’s real-time monitoring tools immediately identify the surge in error rates and resource usage anomalies, triggering automated alerts.
+
+*Automation:* Predefined incident response workflows automatically activate scaling protocols to allocate additional resources and attempt a graceful restart of the affected microservice.
+
+*Mobilization:* PagerDuty’s intelligent alerting system notifies the on-call DevOps team through multiple channels (SMS, email, mobile app) based on their availability and expertise. Escalation policies ensure that the right experts are engaged without delay.
+
+*Communication:* Integrated communication platforms facilitate seamless coordination among cross-functional teams. Stakeholders receive real-time updates through PagerDuty’s status pages and automated notifications, ensuring transparency and timely information flow.
+
+**4. The Resolution**
+
+*Speed of Resolution:* Leveraging PagerDuty’s streamlined incident management, the DevOps team identifies the faulty deployment within minutes and rolls back to the stable version. Service restoration occurs within 20 minutes of the initial outage.
+
+*Business Impact:* Minimal financial loss is incurred due to the swift response, preserving merchant trust and user satisfaction. Transaction volumes resume normal operations promptly, avoiding prolonged revenue disruption.
+
+*Compliance Benefits:* PagerDuty ensures detailed logging and audit trails of the incident response, aiding in compliance with industry regulations and internal policies. Post-incident reviews are facilitated through comprehensive reporting tools.
+
+*Prevention Measures:* The root cause analysis leads to enhanced testing protocols for future deployments, including load testing and automated rollback strategies. PagerDuty’s analytics provide insights for continuous improvement, reducing the likelihood of similar incidents.
+
+**5. Demo Execution**
+
+The demo highlights PagerDuty’s robust technical infrastructure tailored for PayPal’s needs:
+- **Real-Time Monitoring:** Showcase dashboards visualizing transaction flows and system health metrics.
+- **Automated Incident Detection:** Demonstrate how anomalies are instantly detected and alerted.
+- **Intelligent Alerting:** Illustrate the customizable alerting rules and escalation policies ensuring the right team members are notified.
+- **Seamless Integration:** Highlight integrations with PayPal’s existing tools like Slack, Jira, and AWS for unified incident management.
+- **Analytics and Reporting:** Present detailed incident reports and post-mortem analysis features that support continuous optimization.
+
+**6. Talk Track for the SC (20-Minute Demo Flow)**
+
+*Introduction (2 mins):* Briefly introduce PayPal’s mission to provide seamless and secure payment solutions globally, emphasizing the importance of reliability.
+
+*Scenario Overview (3 mins):* Present the Black Friday outage scenario, capturing the high stakes and potential impact on PayPal’s operations and reputation.
+
+*Incident Narrative (5 mins):* Walk through the sequence of events from the trigger to identifying the root cause, illustrating the complexity and urgency of the situation.
+
+*The Response with PagerDuty (5 mins):* Demonstrate how PagerDuty’s features effectively detect, automate, mobilize, and communicate during the incident, ensuring a swift and organized response.
+
+*The Resolution and Benefits (3 mins):* Highlight the quick resolution, minimized business impact, compliance advantages, and preventive strategies enabled by PagerDuty.
+
+*Closing and Call-to-Action (2 mins):* Summarize the key benefits of integrating PagerDuty into PayPal’s infrastructure and invite stakeholders to explore a tailored implementation to enhance their incident management strategy.
+
+**Outage Summary:**
+On Black Friday, a faulty deployment caused PayPal’s payment processing service to crash, leading to a global transaction outage that was swiftly resolved within 20 minutes using PagerDuty’s comprehensive incident management solutions.

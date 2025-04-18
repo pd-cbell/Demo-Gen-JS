@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { promptTemplates } from '../promptTemplates';
 
 function Dashboard() {
   const [scenarios, setScenarios] = useState({
@@ -15,8 +16,11 @@ function Dashboard() {
     service_names: '',
   });
 
-  const [apiKey, setApiKey] = useState('');
+  // API key is now read by the server from its environment variable
   const [generationResult, setGenerationResult] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [progressSteps, setProgressSteps] = useState([]);
+  const [currentStep, setCurrentStep] = useState(-1);
 
   const handleCheckboxChange = (e) => {
     const { name, checked } = e.target;
@@ -44,16 +48,39 @@ function Dashboard() {
     const payload = {
       ...formData,
       scenarios: selectedScenarios,
-      apiKey: apiKey,
     };
+    // Initialize progress steps UI
+    const steps = [];
+    selectedScenarios.forEach((scenario) => {
+      if (promptTemplates[scenario]) {
+        steps.push({
+          id: `${scenario}-narrative`,
+          title: `Generating ${scenario} narrative`,
+          prompt: promptTemplates[scenario].narrative.replace('{organization}', formData.org_name),
+        });
+        steps.push({
+          id: `${scenario}-events`,
+          title: `Generating ${scenario} events`,
+          prompt: promptTemplates[scenario].events.replace('{organization}', formData.org_name),
+        });
+      }
+    });
+    setProgressSteps(steps);
+    setCurrentStep(0);
+    setIsLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:5000/api/generate", payload);
-      // Assume the backend returns a message and/or file paths in response.data.message
+      const response = await axios.post("http://localhost:5002/api/generate", payload);
+      // Backend completed generation
       setGenerationResult(response.data.message || "Generation complete.");
+      // Move to last step
+      setCurrentStep(steps.length - 1);
     } catch (error) {
       console.error("Generation error:", error);
-      setGenerationResult("Error during generation.");
+      const errMsg = error.response?.data?.message || "Error during generation.";
+      setGenerationResult(errMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -160,25 +187,31 @@ function Dashboard() {
                 required
               />
             </div>
-            <div className="mb-3">
-              <label htmlFor="api_key_global" className="form-label">
-                OpenAI API Key
-              </label>
-              <input
-                type="password"
-                className="form-control"
-                id="api_key_global"
-                placeholder="Enter your OpenAI API key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn btn-primary w-100">
-              Generate Scenario(s)
+            <button
+              type="submit"
+              className="btn btn-primary w-100"
+              disabled={!Object.values(scenarios).some(Boolean) || isLoading}
+            >
+              {isLoading ? 'Generating...' : 'Generate Scenario(s)'}
             </button>
           </form>
         </div>
       </div>
+      {isLoading && progressSteps.length > 0 && (
+        <div className="mt-3">
+          <h4>Generation Progress</h4>
+          <ul className="list-group">
+            {progressSteps.map((step, idx) => (
+              <li key={step.id} className={`list-group-item ${idx === currentStep ? 'list-group-item-info' : ''}`}>
+                <details>
+                  <summary>{step.title}</summary>
+                  <pre className="mb-0">{step.prompt}</pre>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {generationResult && (
         <div className="mt-3 alert alert-info">
           {generationResult}

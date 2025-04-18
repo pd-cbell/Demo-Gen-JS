@@ -1,0 +1,303 @@
+json
+[
+  {
+    "payload": {
+      "summary": "Venmo API experiencing high latency",
+      "severity": "warning",
+      "source": "MonitoringSystem",
+      "component": "API Gateway",
+      "group": "Venmo Services",
+      "class": "Performance",
+      "custom_details": {
+        "service_name": "Venmo API",
+        "latency_ms": 1200,
+        "threshold_ms": 800
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 30
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 60
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Wire Service outage detected",
+      "severity": "critical",
+      "source": "IncidentDetection",
+      "component": "Wire Transfer Module",
+      "group": "Payment Services",
+      "class": "Outage",
+      "custom_details": {
+        "service_name": "Wire Service",
+        "major_failure": true,
+        "error_code": "WS-503"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 150
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 6,
+        "repeat_offset": 50
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Customer Support Escalation receiving increased tickets",
+      "severity": "warning",
+      "source": "SupportSystem",
+      "component": "Ticketing",
+      "group": "Customer Support",
+      "class": "Volume",
+      "custom_details": {
+        "service_name": "Customer Support Escalation",
+        "ticket_increase": 200,
+        "threshold": 150
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 60
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 4,
+        "repeat_offset": 70
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Venmo API connection timeout errors",
+      "severity": "error",
+      "source": "API Monitor",
+      "component": "Connection Handler",
+      "group": "Venmo Services",
+      "class": "Error",
+      "custom_details": {
+        "service_name": "Venmo API",
+        "timeout_errors": 350,
+        "threshold": 300
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 90
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 3,
+        "repeat_offset": 80
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Wire Service response delayed",
+      "severity": "warning",
+      "source": "PerformanceMonitor",
+      "component": "Response Handler",
+      "group": "Payment Services",
+      "class": "Latency",
+      "custom_details": {
+        "service_name": "Wire Service",
+        "response_delay_sec": 5,
+        "threshold_sec": 3
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 120
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 2,
+        "repeat_offset": 100
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Venmo API service degradation",
+      "severity": "critical",
+      "source": "HealthChecker",
+      "component": "Service Health",
+      "group": "Venmo Services",
+      "class": "Degradation",
+      "custom_details": {
+        "service_name": "Venmo API",
+        "health_score": 40,
+        "threshold_score": 60
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 210
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 45
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Customer Support Escalation system error",
+      "severity": "error",
+      "source": "SupportSystem",
+      "component": "Backend",
+      "group": "Customer Support",
+      "class": "System Error",
+      "custom_details": {
+        "service_name": "Customer Support Escalation",
+        "error_code": "CS-404",
+        "description": "Database connection failed"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 180
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 3,
+        "repeat_offset": 60
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Wire Service backend timeout",
+      "severity": "critical",
+      "source": "BackendMonitor",
+      "component": "Timeout Handler",
+      "group": "Payment Services",
+      "class": "Timeout",
+      "custom_details": {
+        "service_name": "Wire Service",
+        "timeout_events": 50,
+        "threshold_events": 40
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 240
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 4,
+        "repeat_offset": 55
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Venmo API authentication failures",
+      "severity": "error",
+      "source": "AuthService",
+      "component": "Authentication",
+      "group": "Venmo Services",
+      "class": "Authentication Error",
+      "custom_details": {
+        "service_name": "Venmo API",
+        "auth_failures": 150,
+        "threshold": 100
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 300
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 6,
+        "repeat_offset": 35
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Customer Support Escalation high response time",
+      "severity": "warning",
+      "source": "SupportAnalytics",
+      "component": "Response Time Tracker",
+      "group": "Customer Support",
+      "class": "Performance",
+      "custom_details": {
+        "service_name": "Customer Support Escalation",
+        "average_response_time_sec": 12,
+        "threshold_sec": 8
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 360
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 2,
+        "repeat_offset": 65
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Wire Service integration failure",
+      "severity": "error",
+      "source": "IntegrationMonitor",
+      "component": "API Integrator",
+      "group": "Payment Services",
+      "class": "Integration Error",
+      "custom_details": {
+        "service_name": "Wire Service",
+        "failure_rate": 25,
+        "threshold_rate": 10
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 420
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 3,
+        "repeat_offset": 50
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Overall outage affecting multiple services",
+      "severity": "critical",
+      "source": "IncidentManager",
+      "component": "System Wide",
+      "group": "PayPal Services",
+      "class": "Major Outage",
+      "custom_details": {
+        "service_name": "Multiple Services",
+        "impact": "High",
+        "major_failure": true
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 150
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 7,
+        "repeat_offset": 60
+      }
+    ]
+  }
+]

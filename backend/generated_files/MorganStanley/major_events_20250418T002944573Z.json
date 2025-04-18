@@ -1,0 +1,272 @@
+json
+[
+  {
+    "payload": {
+      "summary": "Critical failure in Service B impacting all users.",
+      "severity": "critical",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service B",
+      "group": "Application",
+      "class": "Outage",
+      "custom_details": {
+        "service_name": "B",
+        "major_failure": true,
+        "error_code": "500"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 150
+    },
+    "repeat_schedule": [
+      { "repeat_count": 4, "repeat_offset": 60 },
+      { "repeat_count": 2, "repeat_offset": 120 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service A is experiencing intermittent connectivity issues.",
+      "severity": "warning",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service A",
+      "group": "Network",
+      "class": "Performance",
+      "custom_details": {
+        "service_name": "A",
+        "latency": "250ms",
+        "packet_loss": "2%"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 30
+    },
+    "repeat_schedule": [
+      { "repeat_count": 5, "repeat_offset": 80 },
+      { "repeat_count": 3, "repeat_offset": 160 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service C is down due to unexpected error.",
+      "severity": "error",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service C",
+      "group": "Application",
+      "class": "Outage",
+      "custom_details": {
+        "service_name": "C",
+        "error_code": "503",
+        "retry_attempts": 3
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 60
+    },
+    "repeat_schedule": [
+      { "repeat_count": 6, "repeat_offset": 90 },
+      { "repeat_count": 2, "repeat_offset": 180 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Increased response time detected in Service A.",
+      "severity": "info",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service A",
+      "group": "Performance",
+      "class": "Latency",
+      "custom_details": {
+        "service_name": "A",
+        "average_response_time": "400ms"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 45
+    },
+    "repeat_schedule": [
+      { "repeat_count": 5, "repeat_offset": 70 },
+      { "repeat_count": 2, "repeat_offset": 140 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service B is experiencing high error rates.",
+      "severity": "error",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service B",
+      "group": "Application",
+      "class": "ErrorRate",
+      "custom_details": {
+        "service_name": "B",
+        "error_rate": "5%",
+        "threshold": "3%"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 90
+    },
+    "repeat_schedule": [
+      { "repeat_count": 4, "repeat_offset": 60 },
+      { "repeat_count": 1, "repeat_offset": 120 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service C is undergoing maintenance.",
+      "severity": "info",
+      "source": "Morgan Stanley Operations",
+      "component": "Service C",
+      "group": "Maintenance",
+      "class": "Scheduled",
+      "custom_details": {
+        "service_name": "C",
+        "maintenance_window": "2 hours"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 120
+    },
+    "repeat_schedule": [
+      { "repeat_count": 3, "repeat_offset": 100 },
+      { "repeat_count": 2, "repeat_offset": 200 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Network latency issues detected in Service A.",
+      "severity": "warning",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service A",
+      "group": "Network",
+      "class": "Latency",
+      "custom_details": {
+        "service_name": "A",
+        "network_latency": "300ms"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 180
+    },
+    "repeat_schedule": [
+      { "repeat_count": 4, "repeat_offset": 80 },
+      { "repeat_count": 1, "repeat_offset": 160 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service B has recovered from critical failure.",
+      "severity": "info",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service B",
+      "group": "Application",
+      "class": "Recovery",
+      "custom_details": {
+        "service_name": "B",
+        "recovery_time": "5 minutes"
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 210
+    },
+    "repeat_schedule": [
+      { "repeat_count": 2, "repeat_offset": 100 },
+      { "repeat_count": 1, "repeat_offset": 200 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service C is experiencing degraded performance.",
+      "severity": "warning",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service C",
+      "group": "Performance",
+      "class": "Degradation",
+      "custom_details": {
+        "service_name": "C",
+        "response_time": "350ms"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 240
+    },
+    "repeat_schedule": [
+      { "repeat_count": 3, "repeat_offset": 90 },
+      { "repeat_count": 1, "repeat_offset": 180 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Unexpected shutdown of Service A detected.",
+      "severity": "critical",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service A",
+      "group": "System",
+      "class": "Shutdown",
+      "custom_details": {
+        "service_name": "A",
+        "shutdown_reason": "Kernel panic"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 300
+    },
+    "repeat_schedule": [
+      { "repeat_count": 4, "repeat_offset": 60 },
+      { "repeat_count": 2, "repeat_offset": 120 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service B is experiencing sporadic failures.",
+      "severity": "error",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service B",
+      "group": "Application",
+      "class": "Failure",
+      "custom_details": {
+        "service_name": "B",
+        "failure_rate": "4%",
+        "last_failure": "2024-04-27T10:05:00Z"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 360
+    },
+    "repeat_schedule": [
+      { "repeat_count": 5, "repeat_offset": 80 },
+      { "repeat_count": 1, "repeat_offset": 160 }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Service C has fully recovered and is back to normal.",
+      "severity": "info",
+      "source": "Morgan Stanley Monitoring",
+      "component": "Service C",
+      "group": "Recovery",
+      "class": "Normal Operation",
+      "custom_details": {
+        "service_name": "C",
+        "uptime": "99.9%"
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 420
+    },
+    "repeat_schedule": [
+      { "repeat_count": 2, "repeat_offset": 100 },
+      { "repeat_count": 1, "repeat_offset": 200 }
+    ]
+  }
+]

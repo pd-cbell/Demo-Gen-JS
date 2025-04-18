@@ -20,21 +20,45 @@ exports.loadEvents = async (organization, filename) => {
   const jsonString = content.substring(start_index, end_index + 1);
   return JSON.parse(jsonString);
 };
+ 
+/**
+ * Compute schedule summary for each event before sending.
+ * Returns an array with summary, initial_offset, total_repeats, total_sends, next_offset.
+ */
+exports.computeScheduleSummary = (events) => {
+  return events.map((ev) => {
+    const summary = ev.payload?.summary || '';
+    const timing = ev.timing_metadata || {};
+    const initial_offset = timing.schedule_offset || 0;
+    const repeats = ev.repeat_schedule || [];
+    const total_repeats = repeats.reduce((acc, r) => acc + (r.repeat_count || 0), 0);
+    const total_sends = 1 + total_repeats;
+    const next_offset = repeats.length > 0 ? repeats[0].repeat_offset || 0 : null;
+    return { summary, initial_offset, total_repeats, total_sends, next_offset };
+  });
+};
 
 exports.processEvents = async (events, routing_key) => {
   const results = [];
 
   for (const event of events) {
-    const { timing_metadata, repeat_schedule = [] } = event;
-    const schedule_offset = timing_metadata?.schedule_offset || 0;
+    // get timing and repeats
+    const timing_metadata = event.timing_metadata || {};
+    const schedule_offset = timing_metadata.schedule_offset || 0;
+    const repeat_schedule = event.repeat_schedule || [];
 
     // Delay sending initial event
     if (schedule_offset) {
       await new Promise(resolve => setTimeout(resolve, schedule_offset * 1000));
     }
 
-    // Prepare event payload (remove metadata, etc.)
-    const payload = { ...event.payload, routing_key };
+    // Prepare event payload according to PD Events API v2
+    const eventAction = event.event_action || 'trigger';
+    const payload = {
+      routing_key: routing_key,
+      event_action: eventAction,
+      payload: event.payload,
+    };
 
     // Send the initial event
     let response = await axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } });
