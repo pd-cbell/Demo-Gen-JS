@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Event Sender Results</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-4">
+  <h1>Event Send Results</h1>
+  {% if schedule_summary %}
+  <div class="mt-4">
+    <h2>Event Schedule Summary</h2>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Summary</th>
+          <th>Total Sends</th>
+          <th>Repeat Count</th>
+          <th>Initial Delay (s)</th>
+          <th>Next Offset (s)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in schedule_summary %}
+        <tr>
+          <td>{{ ev.summary }}</td>
+          <td>{{ ev.total_sends }}</td>
+          <td>{{ ev.total_repeats }}</td>
+          <td>{{ ev.initial_offset }}</td>
+          <td>{% if ev.next_offset is not none %}{{ ev.next_offset }}{% else %}-{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Summary</th>
+        <th>Status Code</th>
+        <th>Response</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for res in results %}
+      <tr>
+        <td>{{ res.summary }}</td>
+        <td>{{ res.status_code }}</td>
+        <td>{{ res.response }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <a href="{{ url_for('event_sender') }}" class="btn btn-secondary">Back</a>
+</div>
+</body>
+</html>

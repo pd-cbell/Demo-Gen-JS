@@ -1,0 +1,13 @@
+# Python bytecode files
+*.pyc
+__pycache__/
+
+# Virtual environment directories
+venv/
+env/
+
+# OS-specific files
+.DS_Store
+
+# Generated files directory
+generated_files/

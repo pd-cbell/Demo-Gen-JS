@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PD Demo Generator Dashboard</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+  <h1 class="mt-4">PD Demo Generator Dashboard</h1>
+  <div class="form-group">
+    <label for="api_key_global">OpenAI API Key</label>
+    <input type="password" class="form-control" id="api_key_global" name="api_key" placeholder="Optional if not set by environment variable" required>
+  </div>
+  <ul class="nav nav-tabs mt-4" id="demoTab" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" id="major-tab" data-toggle="tab" href="#major" role="tab">Major</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="partial-tab" data-toggle="tab" href="#partial" role="tab">Partial</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="well-tab" data-toggle="tab" href="#well" role="tab">Well-Understood</a>
+    </li>
+  </ul>
+  <div class="tab-content" id="demoTabContent">
+    <!-- Major Scenario Tab -->
+    <div class="tab-pane fade show active p-3" id="major" role="tabpanel">
+      <form method="POST" action="/">
+        <input type="hidden" name="scenario" value="major">
+        <div class="form-group">
+          <label for="org_name_major">Organization Name</label>
+          <input type="text" class="form-control" id="org_name_major" name="org_name" required>
+        </div>
+        <div class="form-group">
+          <label for="itsm_tools_major">ITSM Tools</label>
+          <input type="text" class="form-control" id="itsm_tools_major" name="itsm_tools" value="ServiceNOW" required>
+        </div>
+        <div class="form-group">
+          <label for="observability_tools_major">Observability Tools</label>
+          <input type="text" class="form-control" id="observability_tools_major" name="observability_tools" value="NewRelic, Splunk" required>
+        </div>
+        <div class="form-group">
+          <label for="service_names_major">Service Name(s)</label>
+          <input type="text" class="form-control" id="service_names_major" name="service_names" value="User Authentication, API Nodes, Payment Processing" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Major Scenario</button>
+      </form>
+    </div>
+    <!-- Partial Scenario Tab -->
+    <div class="tab-pane fade p-3" id="partial" role="tabpanel">
+      <form method="POST" action="/">
+        <input type="hidden" name="scenario" value="partial">
+        <div class="form-group">
+          <label for="org_name_partial">Organization Name</label>
+          <input type="text" class="form-control" id="org_name_partial" name="org_name" required>
+        </div>
+        <div class="form-group">
+          <label for="itsm_tools_partial">ITSM Tools</label>
+          <input type="text" class="form-control" id="itsm_tools_partial" name="itsm_tools" value="ServiceNOW" required>
+        </div>
+        <div class="form-group">
+          <label for="observability_tools_partial">Observability Tools</label>
+          <input type="text" class="form-control" id="observability_tools_partial" name="observability_tools" value="NewRelic, Splunk" required>
+        </div>
+        <div class="form-group">
+          <label for="service_names_partial">Service Name(s)</label>
+          <input type="text" class="form-control" id="service_names_partial" name="service_names" value="API Nodes, Database" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Partial Scenario</button>
+      </form>
+    </div>
+    <!-- Well-Understood Scenario Tab -->
+    <div class="tab-pane fade p-3" id="well" role="tabpanel">
+      <form method="POST" action="/">
+        <input type="hidden" name="scenario" value="well">
+        <div class="form-group">
+          <label for="org_name_well">Organization Name</label>
+          <input type="text" class="form-control" id="org_name_well" name="org_name" required>
+        </div>
+        <div class="form-group">
+          <label for="itsm_tools_well">ITSM Tools</label>
+          <input type="text" class="form-control" id="itsm_tools_well" name="itsm_tools" value="ServiceNOW" required>
+        </div>
+        <div class="form-group">
+          <label for="observability_tools_well">Observability Tools</label>
+          <input type="text" class="form-control" id="observability_tools_well" name="observability_tools" value="NewRelic, Splunk" required>
+        </div>
+        <div class="form-group">
+          <label for="service_names_well">Service Name(s)</label>
+          <input type="text" class="form-control" id="service_names_well" name="service_names" value="Storage" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Well-Understood Scenario</button>
+      </form>
+    </div>
+  </div>
+  <div class="mt-3">
+    <a href="{{ url_for('preview_orgs') }}" class="btn btn-info">View Organizations</a>
+    <a href="{{ url_for('event_sender') }}" class="btn btn-warning ml-2">Event Sender</a>
+  </div>
+</div>
+
+<!-- Bootstrap and dependencies -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(event) {
+      if (!form.querySelector('input[name="api_key"]')) {
+        var apiKeyInput = document.createElement('input');
+        apiKeyInput.type = 'hidden';
+        apiKeyInput.name = 'api_key';
+        apiKeyInput.value = document.getElementById('api_key_global').value;
+        form.appendChild(apiKeyInput);
+      }
+    });
+  });
+</script>
+</body>
+</html>

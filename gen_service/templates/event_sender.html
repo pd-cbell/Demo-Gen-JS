@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Event Sender</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+  <h1>Event Sender</h1>
+  <form id="eventForm" method="POST" action="{{ url_for('event_sender') }}">
+    <div class="form-group">
+      <label for="organization">Organization</label>
+      <select class="form-control" id="organization" name="organization" required>
+        <option value="">Select Organization</option>
+        {% for org in organizations %}
+        <option value="{{ org }}">{{ org }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="filename">Event File</label>
+      <select class="form-control" id="filename" name="filename" required>
+        <option value="">Select a file</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="routing_key">PagerDuty Routing Key</label>
+      <input type="text" class="form-control" id="routing_key" name="routing_key" required>
+    </div>
+    <button type="submit" id="sendButton" class="btn btn-primary">Send Events</button>
+  </form>
+  <div id="progress" style="display: none; margin-top: 20px;">
+    <div class="progress">
+      <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+    </div>
+    <p id="progress-text">Sending events... Please wait.</p>
+  </div>
+</div>
+<script>
+  // When organization is selected, fetch event files
+  $("#organization").change(function(){
+      var org = $(this).val();
+      if(org){
+          $.getJSON("/get_files/" + org, function(data){
+              var options = '<option value="">Select a file</option>';
+              $.each(data, function(i, file){
+                  options += '<option value="'+file+'">'+file+'</option>';
+              });
+              $("#filename").html(options);
+          });
+      } else {
+          $("#filename").html('<option value="">Select a file</option>');
+      }
+  });
+  
+  $("#eventForm").submit(function(){
+      // Disable the submit button to prevent multiple submissions
+      $("#sendButton").prop("disabled", true);
+      // Show the progress indicator
+      $("#progress").show();
+  });
+</script>
+</body>
+</html>
