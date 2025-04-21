@@ -80,6 +80,16 @@ PD-Demo-Generator-Web/
    export OPENAI_API_KEY="your_openai_api_key"
    ```
 
+5. **Optional: Configure LLM Settings via Environment Variables:**
+
+   You can control which OpenAI model and parameters are used for narrative and event generation:
+
+   ```bash
+   export OPENAI_MODEL="o3-mini"        # Model to use (default: o3-mini)
+   export OPENAI_TEMP=1.0                # Sampling temperature (default: 1.0)
+   export OPENAI_MAX_TOKENS=16384        # Max tokens for completions (default: 16384)
+   ```
+
 ## Usage
 
 1. **Run the Flask App:**
@@ -110,6 +120,11 @@ PD-Demo-Generator-Web/
   - **Major Incident:** "User Authentication, API Nodes, Payment Processing"
   - **Partially Understood Incident:** "API Nodes, Database"
   - **Well-Understood Incident:** "Storage"
+
+- **LLM Configuration via Environment Variables:**
+  - `OPENAI_MODEL`: Model to use (default: `o3-mini`).
+  - `OPENAI_TEMP`: Sampling temperature (default: `1.0`).
+  - `OPENAI_MAX_TOKENS`: Maximum tokens for completions (default: `16384`).
 
 - **Event Generation:**
   The event generation functions in `utils.py` generate structured JSON arrays:
