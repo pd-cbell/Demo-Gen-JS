@@ -42,19 +42,29 @@ def index():
         
         # Generate narrative content and events based on the selected scenario
         if scenario == 'major':
-            narrative = utils.generate_major(org_name, api_key, itsm_tools, observability_tools)
-            outage_summary = utils.extract_outage_summary(narrative)
-            incident_details = utils.extract_incident_details(narrative)
+            # Get structured narrative with summary, details, and context
+            result = utils.generate_major(
+                org_name, api_key, itsm_tools, observability_tools, service_names
+            )
+            narrative = result['narrative']
+            outage_summary = result['outage_summary']
+            incident_details = result['incident_details']
             events = utils.generate_major_events(org_name, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details)
         elif scenario == 'partial':
-            narrative = utils.generate_partial(org_name, api_key, itsm_tools, observability_tools)
-            outage_summary = utils.extract_outage_summary(narrative)
-            incident_details = utils.extract_incident_details(narrative)
+            result = utils.generate_partial(
+                org_name, api_key, itsm_tools, observability_tools, service_names
+            )
+            narrative = result['narrative']
+            outage_summary = result['outage_summary']
+            incident_details = result['incident_details']
             events = utils.generate_partial_events(org_name, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details)
         elif scenario == 'well':
-            narrative = utils.generate_well(org_name, api_key, itsm_tools, observability_tools)
-            outage_summary = utils.extract_outage_summary(narrative)
-            incident_details = utils.extract_incident_details(narrative)
+            result = utils.generate_well(
+                org_name, api_key, itsm_tools, observability_tools, service_names
+            )
+            narrative = result['narrative']
+            outage_summary = result['outage_summary']
+            incident_details = result['incident_details']
             events = utils.generate_well_events(org_name, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details)
         else:
             narrative = "Invalid scenario selected."
@@ -190,27 +200,36 @@ def api_generate():
         else:
             service_names = user_services
 
-        # Generate narrative and events
+        # Generate narrative (structured JSON) and events
         if scenario == 'major':
-            narrative = utils.generate_major(org_name, api_key, itsm_tools, observability_tools)
-            outage_summary = utils.extract_outage_summary(narrative)
-            incident_details = utils.extract_incident_details(narrative)
+            structured = utils.generate_major(
+                org_name, api_key, itsm_tools, observability_tools, service_names
+            )
+            narrative = structured['narrative']
+            outage_summary = structured['outage_summary']
+            incident_details = structured['incident_details']
             events = utils.generate_major_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details
             )
         elif scenario == 'partial':
-            narrative = utils.generate_partial(org_name, api_key, itsm_tools, observability_tools)
-            outage_summary = utils.extract_outage_summary(narrative)
-            incident_details = utils.extract_incident_details(narrative)
+            structured = utils.generate_partial(
+                org_name, api_key, itsm_tools, observability_tools, service_names
+            )
+            narrative = structured['narrative']
+            outage_summary = structured['outage_summary']
+            incident_details = structured['incident_details']
             events = utils.generate_partial_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details
             )
         elif scenario == 'well':
-            narrative = utils.generate_well(org_name, api_key, itsm_tools, observability_tools)
-            outage_summary = utils.extract_outage_summary(narrative)
-            incident_details = utils.extract_incident_details(narrative)
+            structured = utils.generate_well(
+                org_name, api_key, itsm_tools, observability_tools, service_names
+            )
+            narrative = structured['narrative']
+            outage_summary = structured['outage_summary']
+            incident_details = structured['incident_details']
             events = utils.generate_well_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details

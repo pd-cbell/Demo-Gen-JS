@@ -38,7 +38,7 @@
     <p id="progress-text">Sending events... Please wait.</p>
   </div>
 </div>
-<div class="container mt-4" id="scheduleSummaryContainer" style="display:none;">
+<div class="container mt-4" id="scheduleSummaryContainer">
   <h2>Event Schedule Summary</h2>
   <table id="scheduleSummaryTable" class="table table-striped"></table>
 </div>
@@ -64,6 +64,27 @@
       } else {
           $("#filename").html('<option value="">Select a file</option>');
       }
+      // Reset summary when organization changes
+      // Clear previous schedule data
+      $("#scheduleSummaryTable").empty();
+  });
+  // When a file is selected, immediately load and show the schedule summary
+  $("#filename").change(function(){
+    var org = $("#organization").val();
+    var file = $("#filename").val();
+    if(org && file){
+      $.post("/event_sender/summary", {organization: org, filename: file}, function(resp){
+        if(resp.error){ alert(resp.error); return; }
+        // Build summary table
+        var html = '<thead><tr><th>Summary</th><th>Total Sends</th><th>Repeat Count</th><th>Initial Delay (s)</th><th>Next Offset (s)</th></tr></thead><tbody>';
+        $.each(resp.schedule_summary, function(i, ev){
+          html += '<tr><td>'+ev.summary+'</td><td>'+ev.total_sends+'</td><td>'+ev.total_repeats+'</td><td>'+ev.initial_offset+'</td><td>'+(ev.next_offset!==null?ev.next_offset:'-')+'</td></tr>';
+        });
+        html += '</tbody>';
+        $("#scheduleSummaryTable").html(html);
+        $("#scheduleSummaryContainer").show();
+      });
+    }
   });
   
   $("#eventForm").submit(function(){
@@ -84,10 +105,9 @@ $(function(){
       if(!org || !file || !routing_key) return;
       $("#sendButton").prop("disabled", true);
       $("#progress").show();
-      $("#scheduleSummaryContainer").hide();
+      // keep schedule summary visible after file selection
       $("#resultsToggleContainer").hide();
       $("#resultsSection").hide();
-      $("#scheduleSummaryTable").empty();
       $("#resultsTable").empty();
       // Send events via Node backend API (parallel scheduling)
       $.ajax({

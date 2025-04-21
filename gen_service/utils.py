@@ -1,6 +1,7 @@
 import os
 import re
 import logging
+import json
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
@@ -13,6 +14,30 @@ api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
     logging.error("API key not found in environment variables. Please set OPENAI_API_KEY.")
     # Optionally raise an exception here
+
+# Centralized LLM factory: read model, temperature, and token limits from environment
+def get_llm(default_temp: float = 1.0):
+    """
+    Return a ChatOpenAI instance configured via env vars:
+      - OPENAI_MODEL (default: o3-mini)
+      - OPENAI_TEMP (default: default_temp)
+      - OPENAI_MAX_TOKENS (default: 16384)
+    """
+    model_name = os.getenv("OPENAI_MODEL", "o3-mini")
+    try:
+        temp = float(os.getenv("OPENAI_TEMP", str(default_temp)))
+    except ValueError:
+        temp = default_temp
+    try:
+        max_tokens = int(os.getenv("OPENAI_MAX_TOKENS", "16384"))
+    except ValueError:
+        max_tokens = 16384
+    return ChatOpenAI(
+        temperature=temp,
+        model_name=model_name,
+        model_kwargs={"max_completion_tokens": max_tokens},
+        openai_api_key=api_key
+    )
 
 def strip_rtf(text):
     """
@@ -75,104 +100,124 @@ def run_chain_with_retry(chain, inputs, max_attempts=3):
 # INCIDENT NARRATIVE FUNCTIONS
 #########################
 
-def generate_major(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk"):
+def generate_major(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk", service_names="User Authentication, API Nodes, Payment Processing"):
     """
     Generate a MAJOR/novel incident narrative.
     The narrative includes a detailed demo story with an outage summary.
     """
+    # Instruct the model to return a JSON object with narrative, outage_summary, and incident_details
     major_incident_template = ChatPromptTemplate.from_template("""
-Craft a structured and engaging demo story narrative for the organization "{organization}". This narrative should be tailored to a realistic scenario for a customer in your industry, clearly reflecting their challenges. Use the following sections:
+Your output must be a valid JSON object with exactly these keys:
+  - narrative: string, the full prose narrative including all sections.
+  - outage_summary: string, a one-line summary of the outage scenario.
+  - incident_details: string, the detailed Incident Narrative section.
 
-1. Scenario Overview: Define a high-impact incident for "{organization}" with a compelling hook.
-2. Incident Narrative: Describe the trigger event, symptoms, diagnostic findings, and root cause.
-3. The Response: Detail how PagerDuty solves the problem using detection, automation, mobilization, and communication.
-4. The Resolution: Explain the speed of resolution, business impact, compliance benefits, and prevention measures.
-5. Demo Execution: Highlight key features of the technical infrastructure.
-6. Talk Track for the SC (20-Minute Demo Flow): Provide a structured walkthrough including introduction, scenario, results, and a closing call-to-action.
+Context for the narrative (use these values in your story):
+- ITSM tools: {itsm_tools}
+- Observability tools: {observability_tools}
+- Services impacted: {service_names}
 
-Output the final narrative as plain text. At the end, include a section starting with:
+Craft a structured and engaging demo story narrative for the organization "{organization}". Tailor it to a realistic scenario for a customer in your industry. Use the following sections internally:
+1. Scenario Overview
+2. Incident Narrative (detailed)
+3. The Response
+4. The Resolution
+5. Demo Execution
+6. Talk Track for the SC (20-Minute Demo Flow)
 
-Outage Summary:
-Followed by a single line summarizing the outage scenario.
+You do not need to label sections in the narrative field beyond providing the prose. Do not include any RTF. Return ONLY the JSON object.
 """)
-    llm_instance = ChatOpenAI(
-        temperature=1,
-        model_name="o1-mini",
-        model_kwargs={"max_completion_tokens": 8192},
-        openai_api_key=api_key
-    )
-    chain = LLMChain(llm=llm_instance, prompt=major_incident_template, verbose=True)
-    content = chain.run(organization=organization)
-    if content:
-        outage_summary = extract_outage_summary(content)
-        logging.info(f"[MAJOR] Outage Summary: {outage_summary}")
-    return content
+    # Instantiate LLM
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=major_incident_template, verbose=True)
+    raw = chain.run(
+        organization=organization,
+        itsm_tools=itsm_tools,
+        observability_tools=observability_tools,
+        service_names=service_names
+    ).strip()
+    if raw.startswith("```") and raw.endswith("```"):
+        raw = raw.strip("`").strip()
+    try:
+        data = json.loads(raw)
+    except ValueError as e:
+        logging.error(f"Failed to parse JSON from model output: {e}")
+        raise
+    return data
 
-def generate_partial(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk"):
+def generate_partial(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk", service_names="API Nodes, Database"):
     """
     Generate a PARTIALLY UNDERSTOOD incident narrative.
     This scenario is less severe and includes a partial outage summary.
     """
+    # Instruct the model to return a JSON object with narrative, outage_summary, and incident_details
     partial_incident_template = ChatPromptTemplate.from_template("""
-Craft a **Partially Understood** incident scenario for the organization "{organization}". 
-This incident should be realistic but less severe (e.g., P3 or P4), where the team has some clues but is uncertain about the root cause. 
-Focus on how PagerDuty supports a human-in-the-loop approach for diagnosis or remediation.
+Your output must be a valid JSON object with exactly these keys:
+  - narrative: string, full prose narrative of the partially understood incident.
+  - outage_summary: string, one-line summary of the incident.
+  - incident_details: string, the detailed Incident Narrative section.
 
-Sections to include:
-1. Scenario Overview  
-2. Incident Narrative  
-3. Partial Resolution Strategy  
-4. Next Steps or Observations  
+Context for the narrative (use these values in your story):
+- ITSM tools: {itsm_tools}
+- Observability tools: {observability_tools}
+- Services impacted: {service_names}
 
-Output as plain text. At the end, include a section:
-Outage Summary:
-Followed by a single line summarizing the incident.
+Craft a Partially Understood incident scenario for the organization "{organization}". It should be realistic but less severe (P3/P4), where root cause is uncertain. Focus on human-in-the-loop diagnosis and remediation. Do not include RTF. Return ONLY the JSON object.
 """)
-    llm_instance = ChatOpenAI(
-        temperature=1,
-        model_name="o1-mini",
-        model_kwargs={"max_completion_tokens": 8192},
-        openai_api_key=api_key
-    )
-    chain = LLMChain(llm=llm_instance, prompt=partial_incident_template, verbose=True)
-    content = chain.run(organization=organization)
-    if content:
-        outage_summary = extract_outage_summary(content)
-        logging.info(f"[PARTIAL] Outage Summary: {outage_summary}")
-    return content
+    # Instantiate LLM
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=partial_incident_template, verbose=True)
+    raw = chain.run(
+        organization=organization,
+        itsm_tools=itsm_tools,
+        observability_tools=observability_tools,
+        service_names=service_names
+    ).strip()
+    if raw.startswith("```") and raw.endswith("```"):
+        raw = raw.strip("`").strip()
+    try:
+        data = json.loads(raw)
+    except ValueError as e:
+        logging.error(f"Failed to parse JSON from model output: {e}")
+        raise
+    return data
 
-def generate_well(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk"):
+def generate_well(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk", service_names="Storage"):
     """
     Generate a WELL-UNDERSTOOD incident narrative.
     This scenario reflects a low-severity incident that is resolved almost automatically.
     """
+    # Instruct the model to return a JSON object with narrative, outage_summary, and incident_details
     well_incident_template = ChatPromptTemplate.from_template("""
-Craft a **Well-Understood** incident scenario for the organization "{organization}". 
-This should be a low-severity incident (e.g., P4 or lower) that is resolved almost instantly with automation. 
-Show how runbooks and PagerDuty's automation ensure a zero-touch resolution.
+Your output must be a valid JSON object with exactly these keys:
+  - narrative: string, full prose narrative of the well-understood incident.
+  - outage_summary: string, one-line summary of the incident.
+  - incident_details: string, the detailed Incident Narrative section.
 
-Sections to include:
-1. Scenario Overview  
-2. Incident Narrative  
-3. Fully Automated Response  
-4. Zero-Touch Resolution  
+Context for the narrative (use these values in your story):
+- ITSM tools: {itsm_tools}
+- Observability tools: {observability_tools}
+- Services impacted: {service_names}
 
-Output as plain text. At the end, include a section:
-Outage Summary:
-Followed by a single line summarizing the incident.
+Craft a Well-Understood incident scenario for the organization "{organization}". It should be low-severity, resolved automatically (zero-touch). Do not include RTF. Return ONLY the JSON object.
 """)
-    llm_instance = ChatOpenAI(
-        temperature=1,
-        model_name="o1-mini",
-        model_kwargs={"max_completion_tokens": 8192},
-        openai_api_key=api_key
-    )
-    chain = LLMChain(llm=llm_instance, prompt=well_incident_template, verbose=True)
-    content = chain.run(organization=organization)
-    if content:
-        outage_summary = extract_outage_summary(content)
-        logging.info(f"[WELL] Outage Summary: {outage_summary}")
-    return content
+    # Instantiate LLM
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=well_incident_template, verbose=True)
+    raw = chain.run(
+        organization=organization,
+        itsm_tools=itsm_tools,
+        observability_tools=observability_tools,
+        service_names=service_names
+    ).strip()
+    if raw.startswith("```") and raw.endswith("```"):
+        raw = raw.strip("`").strip()
+    try:
+        data = json.loads(raw)
+    except ValueError as e:
+        logging.error(f"Failed to parse JSON from model output: {e}")
+        raise
+    return data
 
 #########################
 # EVENT GENERATION FUNCTIONS
@@ -236,13 +281,9 @@ Outage Summary: {outage_summary}
 Do not include explicit timestamp values.
 Output a properly formatted JSON array.
 """)
-    llm_instance = ChatOpenAI(
-        temperature=1,
-        model_name="o1-mini",
-        model_kwargs={"max_completion_tokens": 8192},
-        openai_api_key=api_key
-    )
-    chain = LLMChain(llm=llm_instance, prompt=major_events_template, verbose=True)
+    # Instantiate LLM
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=major_events_template, verbose=True)
     inputs = {
         "organization": organization,
         "itsm_tools": itsm_tools,
@@ -294,13 +335,9 @@ Outage Summary: {outage_summary}
 Do not include explicit timestamp values.
 Output a properly formatted JSON array.
 """)
-    llm_instance = ChatOpenAI(
-        temperature=1,
-        model_name="o1-mini",
-        model_kwargs={"max_completion_tokens": 8192},
-        openai_api_key=api_key
-    )
-    chain = LLMChain(llm=llm_instance, prompt=partial_events_template, verbose=True)
+    # Instantiate LLM
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=partial_events_template, verbose=True)
     inputs = {
         "organization": organization,
         "itsm_tools": itsm_tools,
@@ -350,13 +387,9 @@ Outage Summary: {outage_summary}
 Do not include explicit timestamp values.
 Output a properly formatted JSON array.
 """)
-    llm_instance = ChatOpenAI(
-        temperature=1,
-        model_name="o1-mini",
-        model_kwargs={"max_completion_tokens": 8192},
-        openai_api_key=api_key
-    )
-    chain = LLMChain(llm=llm_instance, prompt=well_events_template, verbose=True)
+    # Instantiate LLM
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=well_events_template, verbose=True)
     inputs = {
         "organization": organization,
         "itsm_tools": itsm_tools,

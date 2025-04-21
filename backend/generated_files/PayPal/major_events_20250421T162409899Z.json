@@ -1,0 +1,244 @@
+[
+  {
+    "payload": {
+      "summary": "Initial alert triggered due to a spike in error rates detected by DataDog.",
+      "severity": "warning",
+      "source": "DataDog",
+      "component": "Payment Processing",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Payment Processing",
+        "error_rate": "spike",
+        "initial_alert": true
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 0
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Splunk logs indicate increased system latency affecting operations.",
+      "severity": "info",
+      "source": "Splunk",
+      "component": "Payment Gateway Integration",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Payment Gateway Integration",
+        "latency": "high"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 45
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "DataDog monitoring detected an overload in the Catalog Database Cache.",
+      "severity": "critical",
+      "source": "DataDog",
+      "component": "Catalog Database Cache",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Catalog Database Cache",
+        "cache_overload": true
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 90
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Major incident: failure cascade due to miscommunication between services.",
+      "severity": "critical",
+      "source": "Splunk",
+      "component": "Payment Gateway Integration",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Payment Gateway Integration",
+        "major_failure": true,
+        "failure_detail": "miscommunication detected"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 135
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "ServiceNOW ticket created to track the escalating incident in Payment Processing.",
+      "severity": "info",
+      "source": "ServiceNOW",
+      "component": "Payment Processing",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Payment Processing",
+        "ticket_id": "SN12345"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 180
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "JIRA ticket opened addressing integration issues in Payment Gateway Integration.",
+      "severity": "warning",
+      "source": "JIRA",
+      "component": "Payment Gateway Integration",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Payment Gateway Integration",
+        "issue_id": "JIRA-6789"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 240
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Initiated cache algorithm adjustments to mitigate overload in Catalog Database Cache.",
+      "severity": "info",
+      "source": "ServiceNOW",
+      "component": "Catalog Database Cache",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Catalog Database Cache",
+        "action": "cache_adjust"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 300
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Commenced update of integration settings to restore Payment Gateway Integration functionality.",
+      "severity": "warning",
+      "source": "JIRA",
+      "component": "Payment Gateway Integration",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Payment Gateway Integration",
+        "action": "update_integration"
+      }
+    },
+    "event_action": "trigger",
+    "timing_metadata": {
+      "schedule_offset": 330
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "DataDog confirms that system metrics have stabilized and services are nearing normal.",
+      "severity": "info",
+      "source": "DataDog",
+      "component": "Payment Processing",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Payment Processing",
+        "metrics": "normal"
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 360
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  },
+  {
+    "payload": {
+      "summary": "Final resolution logged in Splunk as normal operations resumed in Catalog Database Cache.",
+      "severity": "critical",
+      "source": "Splunk",
+      "component": "Catalog Database Cache",
+      "group": "PayPal",
+      "class": "incident",
+      "custom_details": {
+        "service_name": "Catalog Database Cache",
+        "resolution": "restored"
+      }
+    },
+    "event_action": "resolve",
+    "timing_metadata": {
+      "schedule_offset": 420
+    },
+    "repeat_schedule": [
+      {
+        "repeat_count": 5,
+        "repeat_offset": 30
+      }
+    ]
+  }
+]
