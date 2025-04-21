@@ -31,30 +31,30 @@ The PD Demo Generator is a Flask-based web application designed to generate and 
 ## Project Structure
 
 ```
-PD-Demo-Generator-Web/
-├── app.py                  # Main Flask application
-├── utils.py                # Contains logic for narrative and event generation
-├── event_sender.py         # Logic for sending event payloads
-├── templates/
-│   ├── event_sender_results.html  # Results page for sent events
-│   ├── event_sender.html          # Form to send events
-│   ├── index.html                 # Web dashboard and form input interface
-│   └── preview.html               # File browser and editing interface for generated outputs
-├── static/                # Static assets (CSS, JS, images)
-├── generated_files/       # Output directory for narratives and events (auto-generated)
-│   ├── OrganizationA/
-│   └── OrganizationB/
-├── readme.md              # Project overview and documentation
-└── .gitignore             # Git ignore file
-```
+gen_service/                # Flask-based demo generator service
+├── app.py                  # Main Flask application entrypoint
+├── utils.py                # Narrative & event generation logic (LangChain integrations)
+├── event_sender.py         # Event sending & helper functions
+├── requirements.txt        # Python dependencies
+├── Dockerfile              # Docker image build instructions
+├── templates/              # Flask Jinja2 templates
+│   ├── event_sender.html
+│   ├── event_sender_results.html
+│   ├── index.html
+│   └── preview.html
+├── static/                 # Static assets (CSS, JS)
+├── generated_files/        # Generated outputs (per-organization)
+├── readme.md               # This documentation
+└── .gitignore
+``` 
 
 ## Installation
 
-1. **Clone the Repository:**
+1. **Clone the Repository & Enter the Service Directory:**
 
    ```bash
    git clone https://github.com/yourusername/pd-demo-generator.git
-   cd pd-demo-generator
+   cd pd-demo-generator/gen_service
    ```
 
 2. **Set Up a Virtual Environment:**
@@ -67,10 +67,8 @@ PD-Demo-Generator-Web/
 3. **Install Dependencies:**
 
    ```bash
-   pip install flask langchain openai langchain_community
+   pip install -r requirements.txt
    ```
-
-   *Note:* Ensure any additional dependencies are installed as needed.
 
 4. **Set Your OpenAI API Key:**
 
@@ -98,7 +96,7 @@ PD-Demo-Generator-Web/
    python app.py
    ```
 
-   The application will start locally (typically at [http://127.0.0.1:5000](http://127.0.0.1:5000)).
+   The application will start locally on port 5001 (e.g. [http://127.0.0.1:5001](http://127.0.0.1:5001)).
 
 2. **Generate a Demo:**
 

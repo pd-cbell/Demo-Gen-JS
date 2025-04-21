@@ -11,7 +11,7 @@ All components can be run locally or via Docker Compose, with environment variab
 ## Architecture
 
 ```
-Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Flask on 5000)
+Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Flask on 5001)
 ```
 
 ## Prerequisites
@@ -25,6 +25,9 @@ Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Fl
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required)
 - `PYTHON_SERVICE_URL`: Override URL for the Python generation service (default: `http://localhost:5001/api/generate`)
+- `OPENAI_MODEL`: Model to use (default: `o3-mini`)
+- `OPENAI_TEMP`: Sampling temperature (default: `1.0`)
+- `OPENAI_MAX_TOKENS`: Maximum tokens for completions (default: `16384`)
 
 ## Setup with Docker Compose
 
@@ -45,7 +48,7 @@ Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Fl
 
 ### Python Generation & Event UI Service
 This Flask service provides both the narrative/event generation API and a simple web UI for sending events.
-It listens by default on port 5000 and exposes:
+It listens by default on port 5001 and exposes:
   - `/api/generate` for narrative and event JSON generation
   - `/event_sender` for the Event Sender form (proxies to the Node backend for parallel dispatch)
 
@@ -57,8 +60,8 @@ pip install -r requirements.txt
 # Configure your OpenAI key and the Node events API URL
 export OPENAI_API_KEY="your_key_here"
 export NODE_EVENTS_URL="http://127.0.0.1:5002/api/events"
-# Start the Flask app on port 5000
-flask run --host=127.0.0.1 --port=5000
+# Start the Flask app on port 5001
+flask run --host=127.0.0.1 --port=5001
 ```
 
 ### Backend (Express)
@@ -83,7 +86,7 @@ npm start
 
 1. Generate narratives via the **Frontend** (React UI at http://localhost:3000).
 2. Preview and edit generated files on the **Preview** page.
-3. Send live events using the Event Sender UI at http://localhost:5000/event_sender (proxies to the Node backend for parallel dispatch).
+3. Send live events using the Event Sender UI at http://localhost:5001/event_sender (proxies to the Node backend for parallel dispatch).
 
 ## Contributing
 
