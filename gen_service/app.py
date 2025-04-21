@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, send_from_directory, redirect, url_for
-from event_sender import event_sender, get_files, event_sender_summary, event_sender_send
+from flask import Flask, render_template, request, send_from_directory, redirect, url_for, make_response
+import json
+from event_sender import event_sender, get_files, event_sender_summary, event_sender_send, load_event_file, PAGERDUTY_API_URL
 import os
 import datetime
 import utils
@@ -107,16 +108,29 @@ def preview_orgs():
 @app.route('/preview/<org>/<filename>', methods=['GET', 'POST'])
 def preview_file(org, filename):
     file_path = os.path.join(app.config['GENERATED_FOLDER'], org, filename)
+    # Handle edits
     if request.method == 'POST':
-        # Save edited content back to the file
         edited_content = request.form.get('edited_content')
         with open(file_path, 'w') as f:
             f.write(edited_content)
         return redirect(url_for('preview_file', org=org, filename=filename))
-    
-    # Load file content for preview
-    with open(file_path, 'r') as f:
-        content = f.read()
+    # On GET, load and cleanup JSON if needed
+    content = ''
+    if filename.lower().endswith('.json'):
+        try:
+            # Use load_event_file to parse and clean malformed JSON array
+            data = load_event_file(org, filename)
+            content = json.dumps(data, indent=2)
+            # Persist cleaned JSON back to disk
+            with open(file_path, 'w') as f:
+                f.write(content)
+        except Exception:
+            # Fallback to raw content
+            with open(file_path, 'r') as f:
+                content = f.read()
+    else:
+        with open(file_path, 'r') as f:
+            content = f.read()
     return render_template('preview.html', selected_org=org, selected_file=filename, content=content)
 
 @app.route('/download/<org>/<filename>')
@@ -225,6 +239,57 @@ def api_generate():
         "narratives": narratives,
         "events": events_map
     }, 200
+
+@app.route('/preview/<org>/<filename>/postman', methods=['GET'])
+def export_postman(org, filename):
+    """Export the events JSON as a Postman collection."""
+    file_path = os.path.join(app.config['GENERATED_FOLDER'], org, filename)
+    # Load and parse JSON
+    try:
+        with open(file_path, 'r') as f:
+            raw = f.read()
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            data = load_event_file(org, filename)
+    except Exception as e:
+        return f"Error reading file: {e}", 500
+    if not isinstance(data, list):
+        data = [data]
+    # Build Postman collection
+    collection = {
+        "info": {
+            "name": f"{org}_{filename} Postman Collection",
+            "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+        },
+        "item": []
+    }
+    for idx, ev in enumerate(data):
+        # Prepare body, inject routing key variable
+        body_obj = dict(ev)
+        body_obj['routing_key'] = '{{routing_key}}'
+        body_str = json.dumps(body_obj, indent=2)
+        # Derive name
+        name = None
+        if isinstance(ev, dict) and isinstance(ev.get('payload'), dict):
+            name = ev['payload'].get('summary')
+        if not name:
+            name = f"Event {idx+1}"
+        # Append request item
+        collection['item'].append({
+            "name": name,
+            "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": body_str},
+                "url": {"raw": PAGERDUTY_API_URL, "protocol": "https", "host": ["events.pagerduty.com"], "path": ["v2", "enqueue"]}
+            }
+        })
+    # Return as downloadable JSON
+    resp = make_response(json.dumps(collection, indent=2))
+    resp.headers['Content-Type'] = 'application/json'
+    resp.headers['Content-Disposition'] = f'attachment; filename={org}_{filename}_postman_collection.json'
+    return resp
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

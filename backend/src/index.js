@@ -8,7 +8,12 @@ const app = express();
 const port = process.env.PORT || 5002;
 
 // Allow requests only from your frontend at http://localhost:3000
-const corsOptions = { origin: 'http://localhost:3000', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] };
+// Allow the demo UI (Flask or React) to call this API
+const corsOptions = {
+  origin: ['http://localhost:3000', 'http://127.0.0.1:5000', 'http://localhost:5000'],
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+};
 app.use(cors(corsOptions));
 // Preflight CORS support for specific API routes
 app.options('/api/generate', cors(corsOptions));

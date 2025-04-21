@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 
 PAGERDUTY_API_URL = "https://events.pagerduty.com/v2/enqueue"
 GENERATED_FOLDER = 'generated_files'
+NODE_EVENTS_URL = os.getenv('NODE_EVENTS_URL', 'http://127.0.0.1:5002/api/events')
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -118,15 +119,27 @@ def event_sender():
             payload = prepare_event_payload(event)
             
             # Send the initial event
-            response = send_event(payload, routing_key)
-            results.append({
-                "summary": event.get("payload", {}).get("summary", "N/A"),
-                "status_code": response.status_code,
-                "response": response.text,
-                "attempt": "initial"
-            })
+            try:
+                response = send_event(payload, routing_key)
+                results.append({
+                    "summary": event.get("payload", {}).get("summary", "N/A"),
+                    "attempt": "0",
+                    "status_code": response.status_code,
+                    "response": response.text,
+                    "error": None
+                })
+            except Exception as e:
+                logging.error(f"Error sending event (initial): {e}")
+                results.append({
+                    "summary": event.get("payload", {}).get("summary", "N/A"),
+                    "attempt": "0",
+                    "status_code": None,
+                    "response": None,
+                    "error": str(e)
+                })
             
             # Process each repeat schedule entry
+            # Process repeat schedules
             for repeat in repeat_schedule:
                 repeat_count = repeat.get("repeat_count", 0)
                 repeat_offset = repeat.get("repeat_offset", 0)
@@ -134,13 +147,24 @@ def event_sender():
                     if repeat_offset:
                         logging.info(f"Waiting {repeat_offset} seconds before repeat attempt {i+1} for event: {event.get('payload', {}).get('summary', 'N/A')}")
                         time.sleep(repeat_offset)
-                    response = send_event(payload, routing_key)
-                    results.append({
-                        "summary": event.get("payload", {}).get("summary", "N/A"),
-                        "status_code": response.status_code,
-                        "response": response.text,
-                        "attempt": f"repeat {i+1}"
-                    })
+                    try:
+                        resp = send_event(payload, routing_key)
+                        results.append({
+                            "summary": event.get("payload", {}).get("summary", "N/A"),
+                            "attempt": f"{i+1}",
+                            "status_code": resp.status_code,
+                            "response": resp.text,
+                            "error": None
+                        })
+                    except Exception as e:
+                        logging.error(f"Error sending event (repeat {i+1}): {e}")
+                        results.append({
+                            "summary": event.get("payload", {}).get("summary", "N/A"),
+                            "attempt": f"{i+1}",
+                            "status_code": None,
+                            "response": None,
+                            "error": str(e)
+                        })
         # Render results with schedule summary
         return render_template("event_sender_results.html",
                                results=results,
@@ -185,40 +209,16 @@ def event_sender_summary():
     return jsonify({'schedule_summary': schedule_summary})
 
 def event_sender_send():
-    # Send events and return results as JSON
+    """Proxy event sending to the Node backend asynchronously."""
     org = request.form.get('organization')
     filename = request.form.get('filename')
     routing_key = request.form.get('routing_key')
+    payload = {'organization': org, 'filename': filename, 'routing_key': routing_key}
     try:
-        events = load_event_file(org, filename)
+        # Call Node API to send events in parallel
+        response = requests.post(f"{NODE_EVENTS_URL}/send", json=payload)
+        data = response.json()
+        return jsonify(data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
-    results = []
-    for event in events:
-        timing = event.get('timing_metadata', {}) or {}
-        schedule_offset = timing.get('schedule_offset', 0)
-        repeat_schedule = event.get('repeat_schedule', []) or []
-        if schedule_offset:
-            time.sleep(schedule_offset)
-        payload = prepare_event_payload(event)
-        response = send_event(payload, routing_key)
-        results.append({
-            'summary': event.get('payload', {}).get('summary', 'N/A'),
-            'status_code': response.status_code,
-            'response': response.text,
-            'attempt': 'initial'
-        })
-        for repeat in repeat_schedule:
-            repeat_count = repeat.get('repeat_count', 0)
-            repeat_offset = repeat.get('repeat_offset', 0)
-            for i in range(repeat_count):
-                if repeat_offset:
-                    time.sleep(repeat_offset)
-                resp = send_event(payload, routing_key)
-                results.append({
-                    'summary': event.get('payload', {}).get('summary', 'N/A'),
-                    'status_code': resp.status_code,
-                    'response': resp.text,
-                    'attempt': f'repeat {i+1}'
-                })
-    return jsonify({'results': results})
+        logging.error(f"Error proxying send to Node backend: {e}")
+        return jsonify({'error': str(e)}), 500

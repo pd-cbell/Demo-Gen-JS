@@ -11,7 +11,7 @@ All components can be run locally or via Docker Compose, with environment variab
 ## Architecture
 
 ```
-Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Flask on 5001)
+Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Flask on 5000)
 ```
 
 ## Prerequisites
@@ -43,14 +43,22 @@ Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Fl
 
 ## Local Development
 
-### Python Gen Service
+### Python Generation & Event UI Service
+This Flask service provides both the narrative/event generation API and a simple web UI for sending events.
+It listens by default on port 5000 and exposes:
+  - `/api/generate` for narrative and event JSON generation
+  - `/event_sender` for the Event Sender form (proxies to the Node backend for parallel dispatch)
+
 ```bash
 cd gen_service
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+# Configure your OpenAI key and the Node events API URL
 export OPENAI_API_KEY="your_key_here"
-python app.py
+export NODE_EVENTS_URL="http://127.0.0.1:5002/api/events"
+# Start the Flask app on port 5000
+flask run --host=127.0.0.1 --port=5000
 ```
 
 ### Backend (Express)
@@ -73,9 +81,9 @@ npm start
 
 ## Usage
 
-1. Generate narratives via the **Frontend**.
-2. Preview/edit files in the **Preview** page.
-3. Send live events on the **Event Sender** page (batch or live stream).
+1. Generate narratives via the **Frontend** (React UI at http://localhost:3000).
+2. Preview and edit generated files on the **Preview** page.
+3. Send live events using the Event Sender UI at http://localhost:5000/event_sender (proxies to the Node backend for parallel dispatch).
 
 ## Contributing
 

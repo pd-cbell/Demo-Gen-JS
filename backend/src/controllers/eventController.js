@@ -38,40 +38,53 @@ exports.streamEvents = async (req, res) => {
     // Send schedule summary as first event
     res.write(`event: schedule\n`);
     res.write(`data: ${JSON.stringify(schedule_summary)}\n\n`);
-    // Stream each event send and its repeats
+    // Asynchronously schedule each event send and its repeats
+    const sendTasks = [];
+    let maxDelay = 0;
     for (const ev of events) {
       const timing = ev.timing_metadata || {};
-      const offset = timing.schedule_offset || 0;
-      if (offset) {
-        await new Promise(r => setTimeout(r, offset * 1000));
-      }
+      const scheduleOffsetMs = (timing.schedule_offset || 0) * 1000;
+      const repeats = ev.repeat_schedule || [];
       const action = ev.event_action || 'trigger';
       const payload = { routing_key, event_action: action, payload: ev.payload };
-      // Initial send
-      let resp = await axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } });
-      const initial = { summary: ev.payload.summary || '', status_code: resp.status, response: resp.data, attempt: 'initial' };
-      res.write(`event: result\n`);
-      res.write(`data: ${JSON.stringify(initial)}\n\n`);
-      // Repeat sends
-      const repeats = ev.repeat_schedule || [];
+      const summary = ev.payload.summary || '';
+
+      // Initial send task
+      sendTasks.push({ delay: scheduleOffsetMs, attempt: 'initial', summary, payload });
+      maxDelay = Math.max(maxDelay, scheduleOffsetMs);
+
+      // Repeat send tasks
       for (const rpt of repeats) {
         const count = rpt.repeat_count || 0;
-        const repOffset = rpt.repeat_offset || 0;
-        for (let i = 0; i < count; i++) {
-          if (repOffset) {
-            await new Promise(r => setTimeout(r, repOffset * 1000));
-          }
-          resp = await axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } });
-          const repeatRes = { summary: ev.payload.summary || '', status_code: resp.status, response: resp.data, attempt: `repeat ${i+1}` };
-          res.write(`event: result\n`);
-          res.write(`data: ${JSON.stringify(repeatRes)}\n\n`);
+        const repOffsetMs = (rpt.repeat_offset || 0) * 1000;
+        for (let i = 1; i <= count; i++) {
+          const delay = scheduleOffsetMs + repOffsetMs * i;
+          sendTasks.push({ delay, attempt: `repeat ${i}`, summary, payload });
+          maxDelay = Math.max(maxDelay, delay);
         }
       }
     }
-    // Signal end of stream
-    res.write(`event: end\n`);
-    res.write(`data: {}\n\n`);
-    res.end();
+    // Schedule all tasks
+    for (const task of sendTasks) {
+      setTimeout(async () => {
+        try {
+          const resp = await axios.post(PAGERDUTY_API_URL, task.payload, { headers: { 'Content-Type': 'application/json' } });
+          const result = { summary: task.summary, status_code: resp.status, response: resp.data, attempt: task.attempt };
+          res.write(`event: result\n`);
+          res.write(`data: ${JSON.stringify(result)}\n\n`);
+        } catch (error) {
+          const errResult = { summary: task.summary, error: error.message, attempt: task.attempt };
+          res.write(`event: result\n`);
+          res.write(`data: ${JSON.stringify(errResult)}\n\n`);
+        }
+      }, task.delay);
+    }
+    // Signal end of stream after all tasks have been scheduled
+    setTimeout(() => {
+      res.write(`event: end\n`);
+      res.write(`data: {}\n\n`);
+      res.end();
+    }, maxDelay + 1000);
   } catch (error) {
     console.error('Error in streamEvents:', error);
     res.write(`event: error\n`);

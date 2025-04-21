@@ -4,7 +4,8 @@ import axios from 'axios';
 import SimpleMDE from 'react-simplemde-editor';
 // EasyMDE CSS (peer of react-simplemde-editor)
 import 'easymde/dist/easymde.min.css';
-import ReactJson from 'react18-json-view';
+// Removed JSON tree editor; using text editor for all file types
+// import ReactJson from 'react18-json-view';
 
 const Preview = () => {
   const [organizations, setOrganizations] = useState([]);
@@ -35,44 +36,15 @@ const Preview = () => {
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
-    // Fetch file content from backend
     axios.get(`http://localhost:5002/api/preview/${selectedOrg}/${file}`)
       .then((res) => {
-        if (file.toLowerCase().endsWith('.json')) {
-          const raw = res.data.content || '';
-          setContent(raw);
-          // Sanitize JSON: extract array between first '[' and last ']'
-          let toParse = raw;
-          const start = raw.indexOf('[');
-          const end = raw.lastIndexOf(']');
-          if (start !== -1 && end !== -1 && end > start) {
-            toParse = raw.slice(start, end + 1);
-          }
-          try {
-            const parsed = JSON.parse(toParse);
-            setJsonData(parsed);
-            setJsonError(null);
-          } catch (e) {
-            console.error('Failed to parse JSON content', e);
-            setJsonData(null);
-            setJsonError(e.message || 'Invalid JSON');
-          }
-        } else {
-          setContent(res.data.content);
-          setJsonData(null);
-          setJsonError(null);
-        }
+        setContent(res.data.content);
       })
       .catch((err) => console.error(err));
   };
 
   const handleSave = () => {
-    // Determine content to save based on file type
-    const isJson = selectedFile.toLowerCase().endsWith('.json');
-    const updatedContent = isJson
-      ? (jsonError ? content : JSON.stringify(jsonData, null, 2))
-      : content;
-    axios.post(`http://localhost:5002/api/preview/${selectedOrg}/${selectedFile}`, { content: updatedContent })
+    axios.post(`http://localhost:5002/api/preview/${selectedOrg}/${selectedFile}`, { content })
       .then(() => alert('File saved successfully!'))
       .catch((err) => console.error(err));
   };
@@ -116,35 +88,6 @@ const Preview = () => {
           <h2>
             Editing File: {selectedFile} (Organization: {selectedOrg})
           </h2>
-          {selectedFile.toLowerCase().endsWith('.json') ? (
-            jsonError ? (
-              <div>
-                <div className="alert alert-danger">
-                  Error parsing JSON: {jsonError}
-                </div>
-                <textarea
-                  className="form-control"
-                  rows={20}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                />
-              </div>
-            ) : (
-              <div className="json-editor">
-                <ReactJson
-                  src={jsonData}
-                  onEdit={(edit) => setJsonData(edit.updated_src)}
-                  onAdd={(add) => setJsonData(add.updated_src)}
-                  onDelete={(del) => setJsonData(del.updated_src)}
-                  enableClipboard={false}
-                  name={false}
-                  collapsed={false}
-                  displayDataTypes={false}
-                  displayObjectSize={false}
-                />
-              </div>
-            )
-          ) : (
             <SimpleMDE
               value={content}
               onChange={(value) => setContent(value)}
@@ -153,7 +96,6 @@ const Preview = () => {
                 placeholder: "Edit content here...",
               }}
             />
-          )}
           <div className="mt-3">
             <button className="btn btn-success" onClick={handleSave}>
               Save Changes

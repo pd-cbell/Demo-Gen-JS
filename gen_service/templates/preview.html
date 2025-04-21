@@ -33,13 +33,14 @@
   
   {% else %}
     <h2>Editing File: {{ selected_file }} (Organization: {{ selected_org }})</h2>
-    <form method="POST">
+    <form method="POST" id="previewForm">
       <div class="form-group">
         <label for="edited_content">Content (editable)</label>
         <textarea class="form-control" id="edited_content" name="edited_content" rows="15">{{ content }}</textarea>
       </div>
       <button type="submit" class="btn btn-success">Save Changes</button>
       <a href="{{ url_for('download', org=selected_org, filename=selected_file) }}" class="btn btn-primary">Download</a>
+      <a href="{{ url_for('export_postman', org=selected_org, filename=selected_file) }}" class="btn btn-outline-primary ml-2">Export to Postman</a>
     </form>
     <br>
     <a href="{{ url_for('preview_org', org=selected_org) }}" class="btn btn-secondary">Back to Files</a>

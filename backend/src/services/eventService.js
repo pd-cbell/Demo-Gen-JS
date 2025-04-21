@@ -38,54 +38,67 @@ exports.computeScheduleSummary = (events) => {
   });
 };
 
+/**
+ * Process events asynchronously: schedule initial and repeat sends concurrently
+ * Returns a promise that resolves to an array of results for each send.
+ */
 exports.processEvents = async (events, routing_key) => {
-  const results = [];
-
+  const sendPromises = [];
   for (const event of events) {
-    // get timing and repeats
     const timing_metadata = event.timing_metadata || {};
-    const schedule_offset = timing_metadata.schedule_offset || 0;
+    const schedule_offset_ms = (timing_metadata.schedule_offset || 0) * 1000;
     const repeat_schedule = event.repeat_schedule || [];
-
-    // Delay sending initial event
-    if (schedule_offset) {
-      await new Promise(resolve => setTimeout(resolve, schedule_offset * 1000));
-    }
-
-    // Prepare event payload according to PD Events API v2
     const eventAction = event.event_action || 'trigger';
     const payload = {
-      routing_key: routing_key,
+      routing_key,
       event_action: eventAction,
       payload: event.payload,
     };
+    const summary = event.payload.summary || 'N/A';
 
-    // Send the initial event
-    let response = await axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } });
-    results.push({
-      summary: event.payload.summary || 'N/A',
-      status_code: response.status,
-      response: response.data,
-      attempt: 'initial'
-    });
+    // Schedule initial send
+    sendPromises.push(new Promise(resolve => {
+      setTimeout(() => {
+        axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } })
+          .then(response => resolve({
+            summary,
+            status_code: response.status,
+            response: response.data,
+            attempt: 'initial'
+          }))
+          .catch(error => resolve({
+            summary,
+            error: error.message,
+            attempt: 'initial'
+          }));
+      }, schedule_offset_ms);
+    }));
 
-    // Process repeat schedule
+    // Schedule repeats
     for (const repeat of repeat_schedule) {
       const repeat_count = repeat.repeat_count || 0;
-      const repeat_offset = repeat.repeat_offset || 0;
-      for (let i = 0; i < repeat_count; i++) {
-        if (repeat_offset) {
-          await new Promise(resolve => setTimeout(resolve, repeat_offset * 1000));
-        }
-        response = await axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } });
-        results.push({
-          summary: event.payload.summary || 'N/A',
-          status_code: response.status,
-          response: response.data,
-          attempt: `repeat ${i+1}`
-        });
+      const repeat_offset_ms = (repeat.repeat_offset || 0) * 1000;
+      for (let i = 1; i <= repeat_count; i++) {
+        const delay = schedule_offset_ms + repeat_offset_ms * i;
+        sendPromises.push(new Promise(resolve => {
+          setTimeout(() => {
+            axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } })
+              .then(response => resolve({
+                summary,
+                status_code: response.status,
+                response: response.data,
+                attempt: `repeat ${i}`
+              }))
+              .catch(error => resolve({
+                summary,
+                error: error.message,
+                attempt: `repeat ${i}`
+              }));
+          }, delay);
+        }));
       }
     }
   }
-  return results;
+  // Wait for all scheduled sends to complete
+  return Promise.all(sendPromises);
 };

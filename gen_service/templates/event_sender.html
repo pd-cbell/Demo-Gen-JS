@@ -89,21 +89,33 @@ $(function(){
       $("#resultsSection").hide();
       $("#scheduleSummaryTable").empty();
       $("#resultsTable").empty();
-      $.post("/event_sender/summary", {organization: org, filename: file}, function(resp){
-        if(resp.error){ alert(resp.error); return; }
-        var html = '<thead><tr><th>Summary</th><th>Total Sends</th><th>Repeat Count</th><th>Initial Delay (s)</th><th>Next Offset (s)</th></tr></thead><tbody>';
-        $.each(resp.schedule_summary, function(i, ev){
-          html += '<tr><td>'+ev.summary+'</td><td>'+ev.total_sends+'</td><td>'+ev.total_repeats+'</td><td>'+ev.initial_offset+'</td><td>'+(ev.next_offset!==null?ev.next_offset:'-')+'</td></tr>';
-        });
-        html += '</tbody>';
-        $("#scheduleSummaryTable").html(html);
-        $("#scheduleSummaryContainer").show();
-        $.post("/event_sender/send", {organization: org, filename: file, routing_key: routing_key}, function(res){
+      // Send events via Node backend API (parallel scheduling)
+      $.ajax({
+        url: 'http://127.0.0.1:5002/api/events/send',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ organization: org, filename: file, routing_key: routing_key }),
+        success: function(resp) {
           $("#progress").hide();
-          if(res.error){ alert(res.error); return; }
-          var rhtml = '<thead><tr><th>Summary</th><th>Status Code</th><th>Response</th></tr></thead><tbody>';
-          $.each(res.results, function(i, r){
-            rhtml += '<tr><td>'+r.summary+'</td><td>'+r.status_code+'</td><td>'+r.response+'</td></tr>';
+          if(resp.error) { alert(resp.error); return; }
+          // Render schedule summary
+          var html = '<thead><tr><th>Summary</th><th>Total Sends</th><th>Repeat Count</th><th>Initial Delay (s)</th><th>Next Offset (s)</th></tr></thead><tbody>';
+          $.each(resp.schedule_summary, function(i, ev) {
+            html += '<tr><td>'+ev.summary+'</td><td>'+ev.total_sends+'</td><td>'+ev.total_repeats+'</td><td>'+ev.initial_offset+'</td><td>'+(ev.next_offset!==null?ev.next_offset:'-')+'</td></tr>';
+          });
+          html += '</tbody>';
+          $("#scheduleSummaryTable").html(html);
+          $("#scheduleSummaryContainer").show();
+          // Render detailed results
+          var rhtml = '<thead><tr><th>Summary</th><th>Attempt</th><th>Status Code</th><th>Response</th><th>Error</th></tr></thead><tbody>';
+          $.each(resp.results, function(i, r) {
+            rhtml += '<tr>'
+                  + '<td>'+r.summary+'</td>'
+                  + '<td>'+(r.attempt||'-')+'</td>'
+                  + '<td>'+(r.status_code!==null?r.status_code:'-')+'</td>'
+                  + '<td>'+(r.response!==null?r.response:'-')+'</td>'
+                  + '<td>'+(r.error?r.error:'-')+'</td>'
+                  + '</tr>';
           });
           rhtml += '</tbody>';
           $("#resultsTable").html(rhtml);
@@ -112,8 +124,14 @@ $(function(){
             $("#resultsSection").toggle();
             $(this).text($("#resultsSection").is(':visible')?'Hide Detailed Results':'Show Detailed Results');
           });
-        });
+        },
+        error: function(jqXHR) {
+          $("#progress").hide();
+          var err = jqXHR.responseJSON && jqXHR.responseJSON.error ? jqXHR.responseJSON.error : 'Error sending events';
+          alert(err);
+        }
       });
+    });
     });
   };
   bindSummarySend();
