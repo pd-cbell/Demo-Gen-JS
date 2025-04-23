@@ -6,6 +6,8 @@ This repository provides a complete end-to-end solution for generating incident 
 - **backend**: A Node.js/Express API that orchestrates generation requests and serves as the client-facing API for the React frontend.
 - **frontend**: A React application providing a UI for generating, previewing, editing, and sending events.
 
+For detailed documentation, see the README.md files in the `gen_service/`, `backend/`, and `frontend/` directories.
+
 All components can be run locally or via Docker Compose, with environment variables for secure API key configuration.
 
 ## Architecture
@@ -47,10 +49,15 @@ Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Fl
 ## Local Development
 
 ### Python Generation & Event UI Service
-This Flask service provides both the narrative/event generation API and a simple web UI for sending events.
+This Flask microservice provides:
+- **Incident Narrative Generation**: structured JSON narratives for Major, Partial, and Well‑Understood incidents via the `/api/generate` endpoint.
+- **Event Payload Generation**: realistic alert streams with `payload.summary`, `severity`, `source`, `component`, `group`, `class`, rich `custom_details`, `event_action`, timing metadata, repeat schedules, and `major_failure` flags.
+- **Organization-Based Storage**: outputs saved under `backend/generated_files/<ORG>/` with timestamped filenames.
+- **Legacy Web UI**: a simple Event Sender form at `/event_sender` (proxies to the Node backend for dispatch).
+
 It listens by default on port 5001 and exposes:
-  - `/api/generate` for narrative and event JSON generation
-  - `/event_sender` for the Event Sender form (proxies to the Node backend for parallel dispatch)
+  - `POST /api/generate` for narrative and event JSON generation
+  - `GET /event_sender` for the Event Sender UI (legacy)
 
 ```bash
 cd gen_service
@@ -72,6 +79,35 @@ export OPENAI_API_KEY="your_key_here"
 export PYTHON_SERVICE_URL="http://localhost:5001/api/generate"
 npm start
 ```
+  
+#### Backend API Endpoints
+  
+**File Preview & Management**
+  
+- `GET /api/preview/organizations` - List available organization directories under `generated_files`.
+- `GET /api/preview/files/:org` - List event JSON files for a given organization.
+- `GET /api/preview/:org/:file` - Retrieve content of a specific event JSON file.
+- `POST /api/preview/:org/:file` - Save updated content of a specific event JSON file.
+- `GET /api/preview/download/:org/:file` - Download a specific event JSON file.
+  
+**Event Sending**
+  
+- `POST /api/events/send` - Send a batch of events (incident or change). Include `org`, `filename`, and optionally `routing_key` in the request body. Returns send results for each event.
+- `GET /api/events/stream` - Server-Sent Events (SSE) endpoint for streaming live send statuses.
+  
+**Template Engine Enhancements**
+  
+- Event JSON files support Lodash-style templates using `{{ ... }}`. Helpers available in templates:
+  - `timestamp(offsetOrMin, [maxOffset])` for dynamic ISO timestamps with fixed or random offsets.
+  - `faker` (Faker.js) to generate realistic fake data, e.g., `{{ faker.name.firstName() }}` or `{{ faker.internet.uuid() }}`.
+  
+**Change Event Support**
+  
+- Events including a top-level `routing_key` or `links` field are treated as PagerDuty Change Events and sent to `/v2/change/enqueue`. Other events are sent as incident events to `/v2/enqueue`.
+  
+**Improved File Selection**
+  
+- The Preview API now groups files by organization, enabling the UI to display and filter event files from `generated_files/{org}` directories.
 
 ### Frontend (React)
 ```bash
@@ -84,9 +120,10 @@ npm start
 
 ## Usage
 
-1. Generate narratives via the **Frontend** (React UI at http://localhost:3000).
-2. Preview and edit generated files on the **Preview** page.
-3. Send live events using the Event Sender UI at http://localhost:5001/event_sender (proxies to the Node backend for parallel dispatch).
+1. Use the **Dashboard** in the React frontend (http://localhost:3000) to generate narratives and event payloads.
+2. Preview and edit generated JSON files on the **Preview** page.
+3. Send live events and monitor status using the **Event Sender** page in the React frontend.
+   (Alternatively, use the legacy Flask UI at http://localhost:5001/event_sender.)
 
 ## Contributing
 

@@ -7,6 +7,34 @@ This directory contains the React-based UI microservice for the PD Demo Agent ap
 
 The frontend runs on port **3000** by default and communicates with the backend service at `http://localhost:5002`.
 
+## Features
+
+- **Template & Faker Support**  
+  Generated event JSON templates can include Lodash-style `{{…}}` expressions. You can invoke:
+  - `timestamp(offset)` or `timestamp(minOffset, maxOffset)` for dynamic ISO timestamps.
+  - `faker` methods, e.g. `{{ faker.internet.email() }}` or `{{ faker.datatype.uuid() }}`.
+
+- **Change Event Sending**  
+  If your template includes a top-level `routing_key` or `links` property, the UI will send it as a PagerDuty Change Event (via `/v2/change/enqueue`) instead of an incident event.
+
+- **Improved File Selection & Preview**  
+  The Preview page now groups files by organization (folders under `generated_files/{org}`) so you can quickly browse, edit, download, and send event files per org.
+
+## Frontend API Endpoints
+
+All frontend requests are proxied to the backend at `http://localhost:5002/api`:
+
+- **Preview**  
+  - `GET /api/preview/organizations`
+  - `GET /api/preview/files/:org`
+  - `GET /api/preview/:org/:file`
+  - `POST /api/preview/:org/:file`
+  - `GET /api/preview/download/:org/:file`
+
+- **Event Sending**  
+  - `POST /api/events/send`
+  - `GET  /api/events/stream` (SSE)
+
 ## Prerequisites
   - Node.js (>=16.x)
   - npm (>=8.x)

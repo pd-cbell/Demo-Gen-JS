@@ -1,32 +1,29 @@
-# PD Demo Generator Web App
+# gen_service: PD Demo Generator Microservice
 
-The PD Demo Generator is a Flask-based web application designed to generate and preview incident narratives and event payloads for demonstration purposes. It leverages OpenAI's language models via LangChain to produce structured incident storyboards and associated event payloads that mimic PagerDuty events. This tool is particularly useful for demonstration, training, or testing scenarios in AIOps and incident management.
+The `gen_service` is a Flask microservice for generating incident narratives and structured event payloads for PagerDuty demos, training, and testing. It uses OpenAI's GPT models (via LangChain) to craft engaging incident storyboards (Major, Partial, Well‑Understood) and simulates alert streams through JSON payloads that resemble real PagerDuty events.
 
-## Features
+All outputs are saved under `backend/generated_files/<ORG>/`, where `<ORG>` is a sanitized organization name. Files are timestamped for easy organization.
 
-- **Incident Narrative Generation:**
-  - Generate realistic incident narratives for various scenarios:
-    - Major Incident
-    - Partially Understood Incident
-    - Well-Understood Incident
+## Key Features
 
-- **Event Payload Generation:**
-  - Generate structured JSON event payloads that include:
-    - A `payload` object with fields such as `summary`, `severity`, `source`, `component`, `group`, `class`, and `custom_details` (which includes `service_name` and additional contextual information).
-    - `event_action` (either "trigger" or "resolve").
-    - `timing_metadata` with a `schedule_offset`.
-    - A `repeat_schedule` for major and partial incidents (defining `repeat_count` and `repeat_offset`) to simulate a total of 50–70 events over 420 seconds.
-    - For major incidents, one event is flagged with `"major_failure": true`.
+- **Incident Narrative Generation**
+  - Structured JSON narratives for Major, Partial, and Well‑Understood incidents.
 
-- **Event Sending:**
-  - Send generated event payloads using the built-in event sender endpoint to simulate live incident events in your demos.
+- **Event Payload Generation**
+  - Realistic alert streams with concise `payload.summary` titles representative of observability tools.
+  - Includes `severity`, `source`, `component`, `group`, `class`, and rich `custom_details` (e.g., `service_name`, `event_id`, `hostname`, `ip_address`, `cluster_name`).
+  - `event_action` of `"trigger"` or `"resolve"`.
+  - `timing_metadata.schedule_offset` and `repeat_schedule` to simulate 50–70 events over 420 seconds for major/partial incidents; 2–3 events for well‑understood incidents.
+  - One major event flagged with `"major_failure": true` between 120–180s.
 
-- **Preview & Editing Interface:**
-  - View generated narratives and event payloads in an organization-specific file browser.
-  - Edit and download files directly from the web interface.
+- **Event Dispatching**
+  - POST to `/event_sender/send` to simulate live event streams (e.g., PagerDuty API).
 
-- **Organization-Specific Output:**
-  - Generated outputs are automatically saved in organization-specific subdirectories under `backend/generated_files/`, making it easier to manage multiple customer demos.
+- **Web UI & Preview**
+  - Browse, edit, and download generated files per organization via a simple Flask UI.
+
+- **Organization-Based Storage**
+  - Files saved under `backend/generated_files/<ORG>/` with timestamped filenames.
 
 ## Project Structure
 
@@ -43,7 +40,7 @@ gen_service/                # Flask-based demo generator service
 │   ├── index.html
 │   └── preview.html
 ├── static/                 # Static assets (CSS, JS)
-├── generated_files/        # (deprecated) use `backend/generated_files/` for output storage
+├── generated_files/        # legacy; outputs are now saved under `backend/generated_files/`
 ├── readme.md               # This documentation
 └── .gitignore
 ``` 
@@ -111,6 +108,32 @@ gen_service/                # Flask-based demo generator service
    - Use the file browser on the preview page to navigate through organizations and files.
    - Click on a file to view and edit its content.
    - Download the file if needed.
+
+## API Endpoints
+
+- **POST /api/generate**
+  - Request JSON body:
+    ```json
+    {
+      "org_name": "string",
+      "scenarios": ["major", "partial", "well"],
+      "itsm_tools": "string (optional)",
+      "observability_tools": "string (optional)",
+      "service_names": "string (optional)"
+    }
+    ```
+  - Response JSON:
+    ```json
+    {
+      "message": "Scenarios generated for organization: <org_name>",
+      "narratives": {"major": "...", "partial": "...", "well": "..."},
+      "events": {"major": "<events JSON>", "partial": "...", "well": "..."},
+      "change_events": {"major": "<change events JSON>"}
+    }
+    ```
+
+- **GET /preview/<org>/<filename>/postman**
+  - Export events JSON as a Postman collection for the specified file.
 
 ## Configuration
 
