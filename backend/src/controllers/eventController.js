@@ -24,6 +24,7 @@ exports.sendEvents = async (req, res) => {
 exports.streamEvents = async (req, res) => {
   const axios = require('axios');
   const PAGERDUTY_API_URL = 'https://events.pagerduty.com/v2/enqueue';
+  const PAGERDUTY_CHANGE_URL = 'https://events.pagerduty.com/v2/change/enqueue';
   try {
     const { organization, filename, routing_key } = req.query;
     // Load events
@@ -42,25 +43,51 @@ exports.streamEvents = async (req, res) => {
     const sendTasks = [];
     let maxDelay = 0;
     for (const ev of events) {
-      const timing = ev.timing_metadata || {};
-      const scheduleOffsetMs = (timing.schedule_offset || 0) * 1000;
-      const repeats = ev.repeat_schedule || [];
-      const action = ev.event_action || 'trigger';
-      const payload = { routing_key, event_action: action, payload: ev.payload };
-      const summary = ev.payload.summary || '';
-
-      // Initial send task
-      sendTasks.push({ delay: scheduleOffsetMs, attempt: 'initial', summary, payload });
-      maxDelay = Math.max(maxDelay, scheduleOffsetMs);
-
-      // Repeat send tasks
-      for (const rpt of repeats) {
-        const count = rpt.repeat_count || 0;
-        const repOffsetMs = (rpt.repeat_offset || 0) * 1000;
-        for (let i = 1; i <= count; i++) {
-          const delay = scheduleOffsetMs + repOffsetMs * i;
-          sendTasks.push({ delay, attempt: `repeat ${i}`, summary, payload });
-          maxDelay = Math.max(maxDelay, delay);
+      // Determine if this is a change event
+      const isChange = ev.hasOwnProperty('routing_key') || ev.hasOwnProperty('links');
+      // Compute initial send delay (ms)
+      const scheduleOffsetMs = ((ev.timing_metadata?.schedule_offset) || 0) * 1000;
+      const summary = ev.payload?.summary || '';
+      if (isChange) {
+        // Prepare change event payload, override routing_key
+        const changeEvent = { ...ev, routing_key };
+        sendTasks.push({
+          delay: scheduleOffsetMs,
+          attempt: 'initial',
+          summary,
+          payload: changeEvent,
+          url: PAGERDUTY_CHANGE_URL,
+        });
+        maxDelay = Math.max(maxDelay, scheduleOffsetMs);
+      } else {
+        // Incident event
+        const action = ev.event_action || 'trigger';
+        const payload = { routing_key, event_action: action, payload: ev.payload };
+        // Initial send task
+        sendTasks.push({
+          delay: scheduleOffsetMs,
+          attempt: 'initial',
+          summary,
+          payload,
+          url: PAGERDUTY_API_URL,
+        });
+        maxDelay = Math.max(maxDelay, scheduleOffsetMs);
+        // Schedule repeats if any
+        const repeats = ev.repeat_schedule || [];
+        for (const rpt of repeats) {
+          const count = rpt.repeat_count || 0;
+          const repOffsetMs = (rpt.repeat_offset || 0) * 1000;
+          for (let i = 1; i <= count; i++) {
+            const delay = scheduleOffsetMs + repOffsetMs * i;
+            sendTasks.push({
+              delay,
+              attempt: `repeat ${i}`,
+              summary,
+              payload,
+              url: PAGERDUTY_API_URL,
+            });
+            maxDelay = Math.max(maxDelay, delay);
+          }
         }
       }
     }
@@ -68,7 +95,7 @@ exports.streamEvents = async (req, res) => {
     for (const task of sendTasks) {
       setTimeout(async () => {
         try {
-          const resp = await axios.post(PAGERDUTY_API_URL, task.payload, { headers: { 'Content-Type': 'application/json' } });
+          const resp = await axios.post(task.url, task.payload, { headers: { 'Content-Type': 'application/json' } });
           const result = { summary: task.summary, status_code: resp.status, response: resp.data, attempt: task.attempt };
           res.write(`event: result\n`);
           res.write(`data: ${JSON.stringify(result)}\n\n`);

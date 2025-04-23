@@ -22,24 +22,57 @@
    - `backend/`: Node.js Express API, orchestrates requests & serves frontend.
    - `frontend/`: React application (bootstrapped with Create React App).
 
- ### gen_service/
- - `app.py`: Main Flask app entrypoint.
- - `utils.py`: Core logic for generating narratives and payloads.
- - `generate.py`, `event_sender.py`: Helper scripts.
- - `templates/`, `static/`: HTML templates & static assets.
- - `Dockerfile`, `requirements.txt`, `readme.md`: Service-specific setup.
+ ### gen_service/ (Python Flask service)
+ Provides REST APIs and web UI endpoints for generating incident narratives and event payloads, scheduling and sending events to PagerDuty, and previewing/downloading generated outputs. Leverages LangChain and OpenAI SDK for LLM-powered generation.
 
- ### backend/
- - `src/`: Source code (routes, controllers, services).
- - `package.json`: Node dependencies & scripts.
- - `Dockerfile`: Container configuration.
- - `generated_files/`: Organization-specific generated outputs (JSON & text).
+ - `app.py`: Defines the Flask application (port 5001) and routes:
+   - `POST /api/generate`: Programmatic generation of narratives and events for scenarios (`major`, `partial`, `well`).
+   - `GET /get_files/<org>`: List generated files for an organization.
+   - `GET/POST /event_sender*`: Web UI endpoints to preview, summarize, and send events to PagerDuty.
+   - `GET /preview`, `/preview/<org>`, `/preview/<org>/<filename>`: Preview generated narrative and event files; support editing and cleanup.
+   - `GET /download/<org>/<filename>`: Download files as attachments.
+   - `GET /preview/<org>/<filename>/postman`: Export events JSON as a Postman collection.
+ - `utils.py`: Core generation logic using LangChain LLMChain:
+   - `generate_major`, `generate_partial`, `generate_well`: Produce structured JSON narratives with `narrative`, `outage_summary`, and `incident_details`.
+   - `generate_*_events`: Generate JSON arrays of event payloads with timing and repeat metadata.
+   - `get_llm`, retry logic, and helper functions (`strip_rtf`, `extract_outage_summary`, `extract_incident_details`).
+ - `event_sender.py`: Implements event dispatch UI and logic to:
+   - Load and clean generated event JSON files.
+   - Schedule and repeat events based on metadata.
+   - Send payloads to PagerDuty API (`PAGERDUTY_API_URL`).
+   - Render schedule summaries and send results.
+ - `generate.py`: CLI helper script for direct invocation of generation routines.
+ - `templates/`, `static/`: Flask HTML templates and static assets for the web UI.
+ - `Dockerfile`, `requirements.txt`, `readme.md`: Containerization, dependencies, and service documentation.
 
- ### frontend/
- - `src/`: React components & pages.
- - `public/`: Static HTML & assets.
- - `package.json`: Frontend dependencies & scripts.
- - `Dockerfile`: Container configuration.
+ ### backend/ (Node.js Express API)
+ Provides REST endpoints and streaming APIs to orchestrate generation requests and PagerDuty event dispatch, serving as the bridge between the React frontend and the Python gen_service.
+
+ - `src/index.js`: Express server entrypoint; configures CORS, JSON parsing, health check, and mounts all routes.
+ - `src/routes/generate.js`: `/api/generate` endpoint to accept generation parameters, forward to the Python gen_service, and handle responses.
+ - `src/controllers/generateController.js`: Validates request payloads, calls gen_service (`/api/generate`), and persists returned narratives and events under `generated_files/<org>` with timestamps.
+ - `src/services/generateService.js`: (stub/placeholder) for custom in-process generation orchestration or transformations.
+ - `src/routes/events.js`: `/api/events/send` POST endpoint for batch event dispatch; `/api/events/stream` GET endpoint for Server-Sent Events (SSE) live streaming of send results.
+ - `src/controllers/eventController.js`: Loads event definitions, computes send schedules, and delegates to `eventService` for actual dispatch.
+ - `src/services/eventService.js`: Core logic to parse timing metadata, schedule and repeat HTTP calls to PagerDuty (`events.pagerduty.com/v2/enqueue`), and compute schedule summaries.
+ - `src/routes/preview.js`: File-browser API to list organizations (`/api/organizations`), files (`/api/files/:org`), preview/edit files (`/api/preview/:org/:file`), and download outputs (`/api/download/:org/:file`).
+ - `generated_files/`: Directory storing per-organization output files: narrative `.txt` and event `.json`.
+ - `package.json`: Node.js dependencies and scripts (`npm start`).
+ - `Dockerfile`: Docker configuration for containerizing the backend service.
+
+ ### frontend/ (React, port 3000)
+ - Implements a React application bootstrapped with Create React App, serving the UI at http://localhost:3000.
+ - Navigation & routing (via React Router):
+   - `/` (Dashboard): Select incident scenarios (major, partial, well), enter parameters (organization, ITSM tools, observability tools, service names), and generate narratives & event payloads via the backend `/api/generate` endpoint.
+   - `/event-sender` (Event Sender): Browse generated event JSON files, enter PagerDuty routing key, send events using Server-Sent Events (`/api/events/stream`), and view schedule summaries and results.
+   - `/preview` (Preview): Browse organizations and generated files, view and edit content with a Markdown/JSON editor, save changes (`POST /api/preview/:org/:file`), and download files (`GET /api/download/:org/:file`).
+ - `src/`: Source code including:
+   - `App.js`: Main application routing and navigation.
+   - `pages/`: `Dashboard.js`, `EventSender.js`, `Preview.js`.
+   - `promptTemplates.js`: Templates for generation prompts.
+ - `public/`: Static HTML and assets.
+ - `package.json`: Frontend dependencies (React, React Router, Axios, Bootstrap, react-simplemde-editor) and scripts (`npm start`, `npm test`, `npm run build`).
+ - `Dockerfile`: Produces optimized production build container.
 
  ## Key Technologies
 

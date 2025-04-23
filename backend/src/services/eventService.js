@@ -1,5 +1,11 @@
 const axios = require('axios');
+// Template engine and faker support
+const _ = require('lodash');
+const { faker } = require('@faker-js/faker');
+// PagerDuty Events V2 API endpoint for incident events
 const PAGERDUTY_API_URL = "https://events.pagerduty.com/v2/enqueue";
+// PagerDuty Events V2 API endpoint for change events
+const PAGERDUTY_CHANGE_URL = "https://events.pagerduty.com/v2/change/enqueue";
 
 exports.loadEvents = async (organization, filename) => {
   // For now, read from a file or database as needed.
@@ -17,8 +23,32 @@ exports.loadEvents = async (organization, filename) => {
   if (start_index === -1 || end_index === -1) {
     throw new Error('Invalid event file format.');
   }
+  // Extract JSON array string
   const jsonString = content.substring(start_index, end_index + 1);
-  return JSON.parse(jsonString);
+  // Template evaluation: support timestamp(offset) and faker helpers
+  const templateFn = _.template(jsonString, { interpolate: /{{([\s\S]+?)}}/g });
+  const context = {
+    /**
+     * timestamp helper: if one arg, fixed offset (seconds); if two args, random between offsets.
+     * Usage in template: {{ timestamp(minOffsetSeconds, maxOffsetSeconds) }}
+     */
+    timestamp: (minOffsetSeconds, maxOffsetSeconds) => {
+      const min = Number(minOffsetSeconds);
+      // single argument: fixed offset
+      if (maxOffsetSeconds === undefined) {
+        return new Date(Date.now() + min * 1000).toISOString();
+      }
+      const max = Number(maxOffsetSeconds);
+      // compute random offset between min and max (inclusive)
+      const lo = Math.min(min, max);
+      const hi = Math.max(min, max);
+      const randSec = Math.floor(Math.random() * (hi - lo + 1)) + lo;
+      return new Date(Date.now() + randSec * 1000).toISOString();
+    },
+    faker,
+  };
+  const templated = templateFn(context);
+  return JSON.parse(templated);
 };
  
 /**
@@ -42,60 +72,61 @@ exports.computeScheduleSummary = (events) => {
  * Process events asynchronously: schedule initial and repeat sends concurrently
  * Returns a promise that resolves to an array of results for each send.
  */
+/**
+ * Process events or change events asynchronously.
+ * Supports incident events (with timing_metadata and repeat_schedule) and PagerDuty Change Events.
+ * @param {Array} events - Array of event objects loaded from file
+ * @param {string} routing_key - PagerDuty routing/integration key to use for sends
+ * @returns {Promise<Array>} Array of send results
+ */
 exports.processEvents = async (events, routing_key) => {
   const sendPromises = [];
-  for (const event of events) {
-    const timing_metadata = event.timing_metadata || {};
-    const schedule_offset_ms = (timing_metadata.schedule_offset || 0) * 1000;
-    const repeat_schedule = event.repeat_schedule || [];
-    const eventAction = event.event_action || 'trigger';
-    const payload = {
-      routing_key,
-      event_action: eventAction,
-      payload: event.payload,
-    };
-    const summary = event.payload.summary || 'N/A';
+  for (const ev of events) {
+    // Determine if this is a change event (has its own routing_key or links)
+    const isChange = ev.hasOwnProperty('routing_key') || ev.hasOwnProperty('links');
+    // Schedule offset for initial send (default to 0)
+    const scheduleOffsetMs = ((ev.timing_metadata && ev.timing_metadata.schedule_offset) || 0) * 1000;
+    // Common summary for UI
+    const summary = (ev.payload && ev.payload.summary) || '';
 
-    // Schedule initial send
-    sendPromises.push(new Promise(resolve => {
-      setTimeout(() => {
-        axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } })
-          .then(response => resolve({
-            summary,
-            status_code: response.status,
-            response: response.data,
-            attempt: 'initial'
-          }))
-          .catch(error => resolve({
-            summary,
-            error: error.message,
-            attempt: 'initial'
+    if (isChange) {
+      // Prepare change event payload, override routing_key with provided key
+      const changeEvent = { ...ev, routing_key };
+      // Only initial send for change events
+      sendPromises.push(new Promise(resolve => {
+        setTimeout(() => {
+          axios.post(PAGERDUTY_CHANGE_URL, changeEvent, { headers: { 'Content-Type': 'application/json' } })
+            .then(response => resolve({ summary, status_code: response.status, response: response.data, attempt: 'initial', type: 'change' }))
+            .catch(error => resolve({ summary, error: error.message, attempt: 'initial', type: 'change' }));
+        }, scheduleOffsetMs);
+      }));
+    } else {
+      // Incident event: wrap into proper payload
+      const evAction = ev.event_action || 'trigger';
+      const payload = { routing_key, event_action: evAction, payload: ev.payload };
+      // Initial send
+      sendPromises.push(new Promise(resolve => {
+        setTimeout(() => {
+          axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } })
+            .then(response => resolve({ summary, status_code: response.status, response: response.data, attempt: 'initial', type: 'event' }))
+            .catch(error => resolve({ summary, error: error.message, attempt: 'initial', type: 'event' }));
+        }, scheduleOffsetMs);
+      }));
+      // Repeated sends if specified
+      const repeats = ev.repeat_schedule || [];
+      for (const rpt of repeats) {
+        const count = rpt.repeat_count || 0;
+        const repOffsetMs = (rpt.repeat_offset || 0) * 1000;
+        for (let i = 1; i <= count; i++) {
+          const delay = scheduleOffsetMs + repOffsetMs * i;
+          sendPromises.push(new Promise(resolve => {
+            setTimeout(() => {
+              axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } })
+                .then(response => resolve({ summary, status_code: response.status, response: response.data, attempt: `repeat ${i}`, type: 'event' }))
+                .catch(error => resolve({ summary, error: error.message, attempt: `repeat ${i}`, type: 'event' }));
+            }, delay);
           }));
-      }, schedule_offset_ms);
-    }));
-
-    // Schedule repeats
-    for (const repeat of repeat_schedule) {
-      const repeat_count = repeat.repeat_count || 0;
-      const repeat_offset_ms = (repeat.repeat_offset || 0) * 1000;
-      for (let i = 1; i <= repeat_count; i++) {
-        const delay = schedule_offset_ms + repeat_offset_ms * i;
-        sendPromises.push(new Promise(resolve => {
-          setTimeout(() => {
-            axios.post(PAGERDUTY_API_URL, payload, { headers: { 'Content-Type': 'application/json' } })
-              .then(response => resolve({
-                summary,
-                status_code: response.status,
-                response: response.data,
-                attempt: `repeat ${i}`
-              }))
-              .catch(error => resolve({
-                summary,
-                error: error.message,
-                attempt: `repeat ${i}`
-              }));
-          }, delay);
-        }));
+        }
       }
     }
   }

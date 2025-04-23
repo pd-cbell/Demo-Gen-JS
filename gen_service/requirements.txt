@@ -3,3 +3,4 @@ requests
 langchain
 openai
 langchain_community
+Faker>=13.3.4

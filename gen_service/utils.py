@@ -5,6 +5,9 @@ import json
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.chains import LLMChain
+import datetime
+from faker import Faker
+faker = Faker()
 
 # Setup logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -117,15 +120,30 @@ Context for the narrative (use these values in your story):
 - Observability tools: {observability_tools}
 - Services impacted: {service_names}
 
-Craft a structured and engaging demo story narrative for the organization "{organization}". Tailor it to a realistic scenario for a customer in your industry. Use the following sections internally:
-1. Scenario Overview
-2. Incident Narrative (detailed)
-3. The Response
-4. The Resolution
-5. Demo Execution
-6. Talk Track for the SC (20-Minute Demo Flow)
+Craft a structured and engaging demo story narrative for "{organization}" that closely follows the style of the provided example. Include explicit bold Markdown section headings and structured content to emulate the following sample:
 
-You do not need to label sections in the narrative field beyond providing the prose. Do not include any RTF. Return ONLY the JSON object.
+**Scenario Overview:**  
+Provide a concise description of the incident context, business impact, and urgency.
+
+**Incident Narrative:**  
+Detail the sequence of events, symptoms observed, and root cause analysis.
+
+**The Response:**  
+Describe how monitoring detected the incident, the notification and escalation process, and team collaboration steps.
+
+**The Resolution:**  
+Summarize the actions taken to fix the issue, time-to-resolution, and any mitigations or safeguards applied.
+
+**Demo Execution:**  
+Outline the features and workflows you will demonstrate, focusing on integrations and real-time collaboration.
+
+**Talk Track for the SC (20-Minute Demo Flow):**  
+Provide a high-level timeline of the demo segments with approximate durations.
+
+**Outage Summary:**  
+Restate the one-line summary of the outage scenario.
+
+Return ONLY the JSON object with keys 'narrative', 'outage_summary', and 'incident_details'. Do not include any code fences.
 """)
     # Instantiate LLM
     llm = get_llm()
@@ -257,6 +275,8 @@ def generate_major_events(organization, api_key, itsm_tools, observability_tools
     """
     major_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON array of events for a MAJOR incident scenario for {organization}. The incident is critical.
+Use only the provided observability tools as sources: {observability_tools}.
+Do not include events or sources from ITSM tools: {itsm_tools}.
 Generate 10 unique events over a period of 420 seconds starting from T0. 
 For each unique event, generate an event object with the following structure:
 {{
@@ -292,11 +312,34 @@ Output a properly formatted JSON array.
         "service_names": service_names,
         "incident_details": incident_details
     }
-    events_content = run_chain_with_retry(chain, inputs, max_attempts=3)
-    events_content = events_content.strip()
-    if events_content.startswith('```') and events_content.endswith('```'):
-        events_content = events_content.strip('`').strip()
-    return events_content
+    # Generate raw JSON array string (may include placeholder tokens)
+    raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()
+    # Strip markdown fences if present
+    if raw.startswith('```') and raw.endswith('```'):
+        raw = raw.strip('`').strip()
+    # Parse the JSON array
+    try:
+        events = json.loads(raw)
+    except Exception as e:
+        logging.error(f"Failed to parse JSON major events: {e}\nRaw output: {raw}")
+        raise
+    # Swap payload.summary with custom_details.description so description drives the alert title
+    for ev in events:
+        ev_payload = ev.setdefault('payload', {})
+        cd = ev_payload.setdefault('custom_details', {})
+        if 'description' in cd:
+            # Swap summary and description
+            old_summary = ev_payload.get('summary', '')
+            ev_payload['summary'] = cd['description']
+            cd['description'] = old_summary
+        # Inject faker placeholder metadata into custom_details
+        cd['event_id'] = '{{ faker.datatype.uuid() }}'
+        cd['hostname'] = '{{ faker.internet.domainName() }}'
+        cd['ip_address'] = '{{ faker.internet.ip() }}'
+        cd['cluster_name'] = '{{ faker.commerce.department() + "-cluster" }}'
+        ev_payload['custom_details'] = cd
+    # Return the augmented JSON with placeholders intact
+    return json.dumps(events, indent=2)
 
 def generate_partial_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
     """
@@ -312,6 +355,8 @@ def generate_partial_events(organization, api_key, itsm_tools, observability_too
     """
     partial_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON array of events for a PARTIALLY UNDERSTOOD incident scenario for {organization}. The incident is moderate, with each event having a severity of "warning".
+Use only the provided observability tools as sources: {observability_tools}.
+Do not include events or sources from ITSM tools: {itsm_tools}.
 Generate 10 unique events over a period of 420 seconds starting from T0. 
 For each unique event, generate an event object with the following structure:
 {{
@@ -346,11 +391,28 @@ Output a properly formatted JSON array.
         "service_names": service_names,
         "incident_details": incident_details
     }
-    events_content = run_chain_with_retry(chain, inputs, max_attempts=3)
-    events_content = events_content.strip()
-    if events_content.startswith('```') and events_content.endswith('```'):
-        events_content = events_content.strip('`').strip()
-    return events_content
+    # Generate raw JSON array string (may include placeholder tokens)
+    raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()
+    # Strip markdown fences if present
+    if raw.startswith('```') and raw.endswith('```'):
+        raw = raw.strip('`').strip()
+    # Parse the JSON array
+    try:
+        events = json.loads(raw)
+    except Exception as e:
+        logging.error(f"Failed to parse JSON partial events: {e}\nRaw output: {raw}")
+        raise
+    # Inject faker placeholder metadata into each event's custom_details
+    for ev in events:
+        ev_payload = ev.setdefault('payload', {})
+        cd = ev_payload.setdefault('custom_details', {})
+        cd['event_id'] = '{{ faker.datatype.uuid() }}'
+        cd['hostname'] = '{{ faker.internet.domainName() }}'
+        cd['ip_address'] = '{{ faker.internet.ip() }}'
+        cd['cluster_name'] = '{{ faker.commerce.department() + "-cluster" }}'
+        ev_payload['custom_details'] = cd
+    # Return the augmented JSON with placeholders intact
+    return json.dumps(events, indent=2)
 
 def generate_well_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
     """
@@ -366,6 +428,8 @@ def generate_well_events(organization, api_key, itsm_tools, observability_tools,
     """
     well_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON array of events for a WELL-UNDERSTOOD incident scenario for {organization}. The incident is low-severity and resolved almost automatically.
+Use only the provided observability tools as sources: {observability_tools}.
+Do not include events or sources from ITSM tools: {itsm_tools}.
 Generate between 2 and 3 events over a period of 420 seconds starting from T0. 
 For each event, generate an event object with the following structure:
 {{
@@ -398,8 +462,106 @@ Output a properly formatted JSON array.
         "service_names": service_names,
         "incident_details": incident_details
     }
-    events_content = run_chain_with_retry(chain, inputs, max_attempts=3)
-    events_content = events_content.strip()
-    if events_content.startswith('```') and events_content.endswith('```'):
-        events_content = events_content.strip('`').strip()
-    return events_content
+    # Generate raw JSON array string (may include placeholder tokens)
+    raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()
+    # Strip markdown fences if present
+    if raw.startswith('```') and raw.endswith('```'):
+        raw = raw.strip('`').strip()
+    # Parse the JSON array
+    try:
+        events = json.loads(raw)
+    except Exception as e:
+        logging.error(f"Failed to parse JSON well events: {e}\nRaw output: {raw}")
+        raise
+    # Inject faker placeholders into payloads for dynamic values
+    for ev in events:
+        ev_payload = ev.setdefault('payload', {})
+        ev_payload['event_id'] = '{{ faker.datatype.uuid() }}'
+        ev_payload['hostname'] = '{{ faker.internet.domainName() }}'
+        ev_payload['ip_address'] = '{{ faker.internet.ip() }}'
+    # Return the augmented JSON with placeholders
+    return json.dumps(events, indent=2)
+
+def generate_major_change_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
+    """
+    Generate a JSON array of PagerDuty Change Event API v2 objects for a MAJOR incident scenario.
+    Only include changes from CI/CD tools or ServiceNow change requests that reflect environmental changes causing the outage.
+    Change events should reflect likely service changes that caused or contributed to the error.
+    """
+    # Prompt template for change events
+    change_events_template = ChatPromptTemplate.from_template("""
+Generate a JSON array of PagerDuty Change Event API v2 objects for a MAJOR incident scenario for {organization}.
+Use changes from CI/CD tools (e.g., Jenkins, GitLab CI) or ServiceNow change requests that reflect the environmental changes causing the outage.
+Do not include changes from other ITSM or observability tools.
+Include these contexts:
+- Affected services: {service_names}
+- Outage summary: {outage_summary}
+- Incident details: {incident_details}
+
+Follow the PagerDuty Change Event API v2 specification. A minimal object looks like:
+```
+[
+  {{
+    "routing_key": "<INTEGRATION_KEY>",
+    "event_action": "trigger",
+    "payload": {{
+      "summary": "<short summary of change>",
+      "timestamp": "<ISO8601 timestamp>",
+      "source": "<CI/CD pipeline or ServiceNow change ID>",
+      "custom_details": {{
+        "build_number": "<build number>",
+        "change_ticket": "<ticket ID>",
+        "environment": "<environment>"
+      }}
+    }},
+    "links": [
+      {{
+        "href": "<URL to the build or change request>",
+        "text": "<description>"
+      }}
+    ]
+  }}
+]
+```
+Return only the JSON array of change event objects.
+""")
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=change_events_template, verbose=True)
+    inputs = {
+        "organization": organization,
+        "itsm_tools": itsm_tools,
+        "observability_tools": observability_tools,
+        "service_names": service_names,
+        "outage_summary": outage_summary,
+        "incident_details": incident_details
+    }
+    # Generate and retry if blank
+    # Generate raw JSON array string (may contain placeholders)
+    raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()
+    # Strip markdown fences if present
+    if raw.startswith('```') and raw.endswith('```'):
+        raw = raw.strip('`').strip()
+    # Parse JSON output to overlay placeholder tokens
+    try:
+        events = json.loads(raw)
+    except Exception as e:
+        logging.error(f"Failed to parse JSON change events: {e}\nRaw output: {raw}")
+        raise
+    # Replace actual values with template placeholders for backend resolution
+    for ev in events:
+        # Use template placeholder for timestamp between 30m and 60s before send time
+        ev_payload = ev.setdefault('payload', {})
+        ev_payload['timestamp'] = '{{ timestamp(-1800, -60) }}'
+        # Inject faker placeholders into custom_details
+        cd = ev_payload.setdefault('custom_details', {})
+        cd['build_number'] = '{{ faker.datatype.number({ min: 10000, max: 99999 }) }}'
+        cd['change_ticket'] = "{{ 'CHG' + faker.datatype.number({ min: 10000, max: 999999 }) }}"
+        cd['environment'] = "{{ faker.helpers.arrayElement(['production','staging','development','testing']) }}"
+        # Inject faker placeholders into link href and text
+        links = ev.get('links')
+        if isinstance(links, list) and links:
+            link = links[0]
+            link['href'] = "{{ faker.internet.url() }}"
+            link['text'] = "{{ 'View Change ' + ('CHG' + faker.datatype.number({ min: 10000, max: 999999 })) }}"
+    # Return the augmented JSON with placeholders
+    return json.dumps(events, indent=2)

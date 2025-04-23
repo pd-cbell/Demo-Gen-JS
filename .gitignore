@@ -6,6 +6,9 @@
 # Python virtualenv
 venv/
 
+# Generated Content
+**/generated_files/
+
 # Environment variables
 .env
 

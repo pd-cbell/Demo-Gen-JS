@@ -10,11 +10,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@faker-js/faker": "^8.4.1",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "langchain": "^0.3.20",
+    "lodash": "^4.17.21",
     "mongoose": "^8.13.1"
   }
 }

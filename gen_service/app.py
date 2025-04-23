@@ -6,7 +6,9 @@ import datetime
 import utils
 
 app = Flask(__name__)
-app.config['GENERATED_FOLDER'] = 'generated_files'
+# Store generated files in the backend service directory so they are shared
+backend_gen_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend', 'generated_files'))
+app.config['GENERATED_FOLDER'] = backend_gen_dir
 app.add_url_rule('/get_files/<org>', 'get_files', get_files)
 app.add_url_rule('/event_sender', 'event_sender', event_sender, methods=['GET', 'POST'])
 app.add_url_rule('/event_sender/summary', 'event_sender_summary', event_sender_summary, methods=['POST'])
@@ -49,7 +51,15 @@ def index():
             narrative = result['narrative']
             outage_summary = result['outage_summary']
             incident_details = result['incident_details']
-            events = utils.generate_major_events(org_name, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details)
+            # Generate incident events and change events
+            events = utils.generate_major_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
+            change_events = utils.generate_major_change_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
         elif scenario == 'partial':
             result = utils.generate_partial(
                 org_name, api_key, itsm_tools, observability_tools, service_names
@@ -87,6 +97,16 @@ def index():
         events_path = os.path.join(org_folder, events_filename)
         with open(events_path, 'w') as f:
             f.write(events)
+        # If major scenario, also save change events
+        if scenario == 'major':
+            change_filename = f"{scenario}_change_events_{timestamp}.json"
+            change_path = os.path.join(org_folder, change_filename)
+            try:
+                with open(change_path, 'w') as cf:
+                    cf.write(change_events)
+            except NameError:
+                # change_events not generated
+                pass
         
         # Redirect to the preview page for this organization (listing all files)
         return redirect(url_for('preview_org', org=sanitize_org(org_name)))
@@ -130,10 +150,8 @@ def preview_file(org, filename):
         try:
             # Use load_event_file to parse and clean malformed JSON array
             data = load_event_file(org, filename)
+            # Format JSON for preview (do not overwrite original file)
             content = json.dumps(data, indent=2)
-            # Persist cleaned JSON back to disk
-            with open(file_path, 'w') as f:
-                f.write(content)
         except Exception:
             # Fallback to raw content
             with open(file_path, 'r') as f:
@@ -184,6 +202,7 @@ def api_generate():
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
     narratives = {}
     events_map = {}
+    change_events_map = {}
 
     for scenario in scenarios:
         # Determine service_names for this scenario
@@ -209,6 +228,11 @@ def api_generate():
             outage_summary = structured['outage_summary']
             incident_details = structured['incident_details']
             events = utils.generate_major_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
+            # Generate change events for major scenario
+            change_events = utils.generate_major_change_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details
             )
@@ -248,16 +272,28 @@ def api_generate():
         events_path = os.path.join(org_folder, events_filename)
         with open(events_path, 'w') as f:
             f.write(events)
+        # Save change events for major scenario
+        if scenario == 'major':
+            change_filename = f"{scenario}_change_events_{timestamp}.json"
+            change_path = os.path.join(org_folder, change_filename)
+            with open(change_path, 'w') as cf:
+                cf.write(change_events)
 
         # Collect in-memory outputs
         narratives[scenario] = narrative
         events_map[scenario] = events
+        if scenario == 'major':
+            change_events_map[scenario] = change_events
 
-    return {
+    result = {
         "message": f"Scenarios generated for organization: {org_name}",
         "narratives": narratives,
         "events": events_map
-    }, 200
+    }
+    # Include change events where applicable
+    if change_events_map:
+        result["change_events"] = change_events_map
+    return result, 200
 
 @app.route('/preview/<org>/<filename>/postman', methods=['GET'])
 def export_postman(org, filename):

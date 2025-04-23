@@ -1,6 +1,27 @@
-# Getting Started with Create React App
+# PD Demo Agent Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This directory contains the React-based UI microservice for the PD Demo Agent application. It provides:
+  - A **Dashboard** to select incident scenarios (major, partial, well) and generate narratives & event payloads via the backend API.
+  - An **Event Sender** to send generated event payloads to PagerDuty with live schedule summaries and send results.
+  - A **Preview** interface to browse, view, edit, and download generated files per organization.
+
+The frontend runs on port **3000** by default and communicates with the backend service at `http://localhost:5002`.
+
+## Prerequisites
+  - Node.js (>=16.x)
+  - npm (>=8.x)
+
+## Installation
+1. Change into this directory:
+   ```bash
+   cd frontend
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+Ensure that the backend API service is running at `http://localhost:5002` before starting the frontend.
 
 ## Available Scripts
 
@@ -27,44 +48,18 @@ It correctly bundles React in production mode and optimizes the build for the be
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
+## Docker
+This project includes a Dockerfile for running the frontend in a container:
+
+1. Build the Docker image:
+   ```bash
+   docker build -t pd-demo-agent-frontend .
+   ```
+2. Run the container:
+   ```bash
+   docker run -it --rm -p 3000:3000 pd-demo-agent-frontend
+   ```
+The app will be accessible at [http://localhost:3000](http://localhost:3000).
+
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

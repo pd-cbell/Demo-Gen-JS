@@ -44,13 +44,31 @@ exports.handleGenerate = async (req, res) => {
       fs.mkdirSync(orgDir, { recursive: true });
     }
     const timestamp = new Date().toISOString().replace(/[:.-]/g, '');
-    // Save files for each scenario
+    // Save files for each scenario, including change events if provided
     for (const scenario of scenarios) {
+      // Narrative file
       if (result.narratives && result.narratives[scenario]) {
-        fs.writeFileSync(path.join(orgDir, `${scenario}_narrative_${timestamp}.txt`), result.narratives[scenario], 'utf-8');
+        fs.writeFileSync(
+          path.join(orgDir, `${scenario}_narrative_${timestamp}.txt`),
+          result.narratives[scenario],
+          'utf-8'
+        );
       }
+      // Event payloads
       if (result.events && result.events[scenario]) {
-        fs.writeFileSync(path.join(orgDir, `${scenario}_events_${timestamp}.json`), result.events[scenario], 'utf-8');
+        fs.writeFileSync(
+          path.join(orgDir, `${scenario}_events_${timestamp}.json`),
+          result.events[scenario],
+          'utf-8'
+        );
+      }
+      // Change events (e.g., for major scenario)
+      if (result.change_events && result.change_events[scenario]) {
+        fs.writeFileSync(
+          path.join(orgDir, `${scenario}_change_events_${timestamp}.json`),
+          result.change_events[scenario],
+          'utf-8'
+        );
       }
     }
 

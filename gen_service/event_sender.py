@@ -6,7 +6,9 @@ import time
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 
 PAGERDUTY_API_URL = "https://events.pagerduty.com/v2/enqueue"
-GENERATED_FOLDER = 'generated_files'
+# Store generated files in the backend service directory so Node backend and Preview UIs share the same files
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend', 'generated_files'))
+GENERATED_FOLDER = BASE_DIR
 NODE_EVENTS_URL = os.getenv('NODE_EVENTS_URL', 'http://127.0.0.1:5002/api/events')
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

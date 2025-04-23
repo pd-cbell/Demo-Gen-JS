@@ -26,7 +26,7 @@ The PD Demo Generator is a Flask-based web application designed to generate and 
   - Edit and download files directly from the web interface.
 
 - **Organization-Specific Output:**
-  - Generated outputs are automatically saved in organization-specific subdirectories under `generated_files/`, making it easier to manage multiple customer demos.
+  - Generated outputs are automatically saved in organization-specific subdirectories under `backend/generated_files/`, making it easier to manage multiple customer demos.
 
 ## Project Structure
 
@@ -43,7 +43,7 @@ gen_service/                # Flask-based demo generator service
 │   ├── index.html
 │   └── preview.html
 ├── static/                 # Static assets (CSS, JS)
-├── generated_files/        # Generated outputs (per-organization)
+├── generated_files/        # (deprecated) use `backend/generated_files/` for output storage
 ├── readme.md               # This documentation
 └── .gitignore
 ``` 
