@@ -169,18 +169,42 @@ def generate_partial(organization, api_key, itsm_tools="ServiceNOW", observabili
     This scenario is less severe and includes a partial outage summary.
     """
     # Instruct the model to return a JSON object with narrative, outage_summary, and incident_details
+    # Instruct the model to return a structured partial-incident narrative with clear sections
     partial_incident_template = ChatPromptTemplate.from_template("""
 Your output must be a valid JSON object with exactly these keys:
-  - narrative: string, full prose narrative of the partially understood incident.
-  - outage_summary: string, one-line summary of the incident.
-  - incident_details: string, the detailed Incident Narrative section.
+  - narrative: string, the full prose narrative including all sections.
+  - outage_summary: string, a one-line summary of the partial outage scenario.
+  - incident_details: string, the detailed 'Incident Narrative' section.
 
 Context for the narrative (use these values in your story):
 - ITSM tools: {itsm_tools}
 - Observability tools: {observability_tools}
 - Services impacted: {service_names}
 
-Craft a Partially Understood incident scenario for the organization "{organization}". It should be realistic but less severe (P3/P4), where root cause is uncertain. Focus on human-in-the-loop diagnosis and remediation. Do not include RTF. Return ONLY the JSON object.
+Craft a structured and engaging demo story narrative for "{organization}" for a PARTIALLY UNDERSTOOD incident (P3/P4 severity). Follow this format using explicit bold Markdown headings:
+
+**Scenario Overview:**  
+Provide a concise description of the incident context, potential business impact, and the partial nature of the outage.
+
+**Incident Narrative:**  
+Detail the sequence of observed issues, investigative steps by the team, and any hypotheses about root cause.
+
+**The Response:**  
+Describe how monitoring alerted the team, the collaboration between stakeholders, and any escalations.
+
+**The Resolution:**  
+Summarize the mitigation steps taken, findings, and remaining unknowns.
+
+**Demo Execution:**  
+Outline the features or workflows you will demonstrate, focusing on investigation and resolution processes.
+
+**Talk Track for the SC (15-Minute Demo Flow):**  
+Provide a high-level timeline of the demo segments with approximate durations.
+
+**Outage Summary:**  
+Restate the one-line summary of the partial outage scenario.
+
+Return ONLY the JSON object with keys 'narrative', 'outage_summary', and 'incident_details'. Do not include any code fences.
 """)
     # Instantiate LLM
     llm = get_llm()
@@ -406,6 +430,12 @@ Output a properly formatted JSON array.
     for ev in events:
         ev_payload = ev.setdefault('payload', {})
         cd = ev_payload.setdefault('custom_details', {})
+        # If a description field is present, swap it with the summary to drive alert titles
+        if 'description' in cd:
+            old_summary = ev_payload.get('summary', '')
+            ev_payload['summary'] = cd.get('description', old_summary)
+            cd['description'] = old_summary
+        # Inject placeholder metadata into custom_details
         cd['event_id'] = '{{ faker.datatype.uuid() }}'
         cd['hostname'] = '{{ faker.internet.domainName() }}'
         cd['ip_address'] = '{{ faker.internet.ip() }}'
@@ -413,6 +443,71 @@ Output a properly formatted JSON array.
         ev_payload['custom_details'] = cd
     # Return the augmented JSON with placeholders intact
     return json.dumps(events, indent=2)
+
+def generate_partial_change_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
+    """
+    Generate a JSON array with exactly one PagerDuty Change Event API v2 object representing the root cause
+    of a PARTIALLY UNDERSTOOD incident scenario.
+    """
+    # Prompt for a single change event reflecting the root cause
+    change_events_template = ChatPromptTemplate.from_template("""
+Generate a JSON array with exactly one PagerDuty Change Event API v2 object that represents the root cause
+of a PARTIALLY UNDERSTOOD incident for {organization}.
+Use only CI/CD tools (e.g., Jenkins, GitLab CI) or ServiceNow change requests reflecting the causal change.
+Include these contexts:
+- Affected services: {service_names}
+- Outage summary: {outage_summary}
+- Incident details: {incident_details}
+
+Return only the JSON array of the change event object following the PagerDuty Change Event API v2 spec, for example:
+[
+  {
+    "routing_key": "<INTEGRATION_KEY>",
+    "event_action": "trigger",
+    "payload": {
+      "summary": "<short summary of change>",
+      "timestamp": "<ISO8601 timestamp>",
+      "source": "<CI/CD pipeline or change ID>",
+      "custom_details": {
+        "change_ticket": "<ticket ID>",
+        "environment": "<environment>"
+      }
+    }
+  }
+]
+Do not include code fences.
+""")
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=change_events_template, verbose=True)
+    inputs = {
+        "organization": organization,
+        "itsm_tools": itsm_tools,
+        "observability_tools": observability_tools,
+        "service_names": service_names,
+        "outage_summary": outage_summary,
+        "incident_details": incident_details
+    }
+    # Generate and retry if blank
+    raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()
+    # Strip markdown fences if present
+    if raw.startswith('```') and raw.endswith('```'):
+        raw = raw.strip('`').strip()
+    # Parse JSON output
+    try:
+        change_events = json.loads(raw)
+    except Exception as e:
+        logging.error(f"Failed to parse JSON partial change events: {e}\nRaw output: {raw}")
+        raise
+    # Inject placeholder tokens for timestamp and custom details
+    for ev in change_events:
+        ev_payload = ev.setdefault('payload', {})
+        # Use a timestamp placeholder between 30m and 60s before now
+        ev_payload['timestamp'] = '{{ timestamp(-1800, -60) }}'
+        cd = ev_payload.setdefault('custom_details', {})
+        cd['change_ticket'] = "{{ 'CHG' + faker.datatype.number({ min: 10000, max: 999999 }) }}"
+        cd['environment'] = "{{ faker.helpers.arrayElement(['production','staging','development','testing']) }}"
+        ev_payload['custom_details'] = cd
+    return json.dumps(change_events, indent=2)
 
 def generate_well_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
     """

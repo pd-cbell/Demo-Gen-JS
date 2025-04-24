@@ -61,13 +61,22 @@ def index():
                 outage_summary, service_names, incident_details
             )
         elif scenario == 'partial':
+            # Generate structured narrative and root-cause change event for partial scenario
             result = utils.generate_partial(
                 org_name, api_key, itsm_tools, observability_tools, service_names
             )
             narrative = result['narrative']
             outage_summary = result['outage_summary']
             incident_details = result['incident_details']
-            events = utils.generate_partial_events(org_name, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details)
+            # Generate incident events and one change event representing the root cause
+            events = utils.generate_partial_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
+            change_events = utils.generate_partial_change_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
         elif scenario == 'well':
             result = utils.generate_well(
                 org_name, api_key, itsm_tools, observability_tools, service_names
@@ -97,8 +106,8 @@ def index():
         events_path = os.path.join(org_folder, events_filename)
         with open(events_path, 'w') as f:
             f.write(events)
-        # If major scenario, also save change events
-        if scenario == 'major':
+        # If major or partial scenario, also save change events
+        if scenario in ('major', 'partial'):
             change_filename = f"{scenario}_change_events_{timestamp}.json"
             change_path = os.path.join(org_folder, change_filename)
             try:
@@ -237,13 +246,20 @@ def api_generate():
                 outage_summary, service_names, incident_details
             )
         elif scenario == 'partial':
+            # Generate structured narrative and root-cause change event for partial scenario
             structured = utils.generate_partial(
                 org_name, api_key, itsm_tools, observability_tools, service_names
             )
             narrative = structured['narrative']
             outage_summary = structured['outage_summary']
             incident_details = structured['incident_details']
+            # Generate incident events
             events = utils.generate_partial_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
+            # Generate one change event for the ultimate root cause
+            change_events = utils.generate_partial_change_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details
             )
@@ -282,7 +298,8 @@ def api_generate():
         # Collect in-memory outputs
         narratives[scenario] = narrative
         events_map[scenario] = events
-        if scenario == 'major':
+        # Include change events for major and partial scenarios
+        if scenario in ('major', 'partial'):
             change_events_map[scenario] = change_events
 
     result = {
