@@ -347,4 +347,5 @@ def export_postman(org, filename):
     return resp
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    # Listen on all interfaces to allow Docker to map the port
+    app.run(debug=True, host='0.0.0.0', port=5001)

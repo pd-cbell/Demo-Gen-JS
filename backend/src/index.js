@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
   res.send('PD Demo Generator v2 API is running');
 },);
 
-// Listen on the IPv4 loopback interface to avoid IPv6-only binding issues
-app.listen(port, '127.0.0.1', () => {
-  console.log(`Server is running on http://127.0.0.1:${port}`);
+// Listen on all network interfaces so the service is accessible from Docker mappings
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server is running on http://0.0.0.0:${port}`);
 });
