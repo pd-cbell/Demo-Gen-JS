@@ -78,13 +78,23 @@ def index():
                 outage_summary, service_names, incident_details
             )
         elif scenario == 'well':
+            # Generate structured narrative, events, and root-cause change event for well-understood scenario
             result = utils.generate_well(
                 org_name, api_key, itsm_tools, observability_tools, service_names
             )
             narrative = result['narrative']
             outage_summary = result['outage_summary']
             incident_details = result['incident_details']
-            events = utils.generate_well_events(org_name, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details)
+            # Generate incident events
+            events = utils.generate_well_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
+            # Generate change event for automated remediation
+            change_events = utils.generate_well_change_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
         else:
             narrative = "Invalid scenario selected."
             events = ""
@@ -106,8 +116,8 @@ def index():
         events_path = os.path.join(org_folder, events_filename)
         with open(events_path, 'w') as f:
             f.write(events)
-        # If major or partial scenario, also save change events
-        if scenario in ('major', 'partial'):
+        # If major, partial, or well-understood scenario, also save change events
+        if scenario in ('major', 'partial', 'well'):
             change_filename = f"{scenario}_change_events_{timestamp}.json"
             change_path = os.path.join(org_folder, change_filename)
             try:
@@ -264,13 +274,20 @@ def api_generate():
                 outage_summary, service_names, incident_details
             )
         elif scenario == 'well':
+            # Generate structured narrative, events, and change event for well-understood scenario
             structured = utils.generate_well(
                 org_name, api_key, itsm_tools, observability_tools, service_names
             )
             narrative = structured['narrative']
             outage_summary = structured['outage_summary']
             incident_details = structured['incident_details']
+            # Generate incident events
             events = utils.generate_well_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
+            # Generate change event for automated remediation
+            change_events = utils.generate_well_change_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details
             )
@@ -288,8 +305,8 @@ def api_generate():
         events_path = os.path.join(org_folder, events_filename)
         with open(events_path, 'w') as f:
             f.write(events)
-        # Save change events for major scenario
-        if scenario == 'major':
+        # Save change events for major, partial, or well-understood scenario
+        if scenario in ('major', 'partial', 'well'):
             change_filename = f"{scenario}_change_events_{timestamp}.json"
             change_path = os.path.join(org_folder, change_filename)
             with open(change_path, 'w') as cf:
@@ -298,8 +315,8 @@ def api_generate():
         # Collect in-memory outputs
         narratives[scenario] = narrative
         events_map[scenario] = events
-        # Include change events for major and partial scenarios
-        if scenario in ('major', 'partial'):
+        # Include change events for major, partial, and well-understood scenarios
+        if scenario in ('major', 'partial', 'well'):
             change_events_map[scenario] = change_events
 
     result = {

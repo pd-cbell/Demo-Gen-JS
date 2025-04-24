@@ -36,6 +36,7 @@ exports.handleGenerate = async (req, res) => {
 
     // Forward the request to the Python generation endpoint
     const response = await axios.post(pythonServiceURL, payload);
+    // Python service returns an object with 'message', 'narratives', 'events', and optional 'change_events'
     const result = response.data;
 
     // Optionally, save the returned narratives and events to local files
@@ -72,9 +73,13 @@ exports.handleGenerate = async (req, res) => {
       }
     }
 
+    // Return the full generation result, including narratives, events, and change events
     return res.json({
-      message: `Scenarios generated for organization: ${org_name}`,
+      message: result.message || `Scenarios generated for organization: ${org_name}`,
       scenarios: scenarios,
+      narratives: result.narratives,
+      events: result.events,
+      change_events: result.change_events
     });
   } catch (error) {
     console.error('Error generating scenarios:', error);

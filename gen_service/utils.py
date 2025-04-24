@@ -171,40 +171,34 @@ def generate_partial(organization, api_key, itsm_tools="ServiceNOW", observabili
     # Instruct the model to return a JSON object with narrative, outage_summary, and incident_details
     # Instruct the model to return a structured partial-incident narrative with clear sections
     partial_incident_template = ChatPromptTemplate.from_template("""
-Your output must be a valid JSON object with exactly these keys:
-  - narrative: string, the full prose narrative including all sections.
-  - outage_summary: string, a one-line summary of the partial outage scenario.
-  - incident_details: string, the detailed 'Incident Narrative' section.
+You are a Site-Reliability Storyteller.
 
-Context for the narrative (use these values in your story):
-- ITSM tools: {itsm_tools}
-- Observability tools: {observability_tools}
-- Services impacted: {service_names}
+**Inputs**
+- organization: {organization}
+- industry: Infer based on the organization name  # e.g. "Higher-Education"
+- core_systems: Infer based on the organization name  # e.g. "Banner SIS, Canvas LMS, Husky Card Gateway"
+- itsm_tools: {itsm_tools}      # keep as-is
+- observability_tools: {observability_tools}
 
-Craft a structured and engaging demo story narrative for "{organization}" for a PARTIALLY UNDERSTOOD incident (P3/P4 severity). Follow this format using explicit bold Markdown headings:
+**Task**
+Write a P3 *partially understood* incident in **Markdown** with the exact bold headings below.
+❗️Do **NOT** invent generic names like “Service A/B”.  Pick systems typical for the supplied *industry* and weave them naturally into the story (e.g. “Banner-DB-Writer”, “Canvas-Edge-API”).
 
-**Scenario Overview:**  
-Provide a concise description of the incident context, potential business impact, and the partial nature of the outage.
+**Format (keep headings verbatim)**  
+**Scenario Overview:** 1 short paragraph (business impact in plain English).  
+**Incident Narrative:** 3-6 bullet points, each a time-stamped fact (e.g. “13:07 ET – Banner-DB latency crossed 800 ms”).  
+**The Response:** steps teams took (names roles you’d find at a university: DBA, Network Engineer, Ed-Tech Lead).  
+**The Resolution:** what mitigated the issue & what remains unknown.  
+**Demo Execution:** which PagerDuty / DataDog views you’ll click on.  
+**Talk Track for the SC (15-Minute Demo Flow):** timeline bullets.  
+**Outage Summary:** single sentence.
 
-**Incident Narrative:**  
-Detail the sequence of observed issues, investigative steps by the team, and any hypotheses about root cause.
+Return a **JSON** object with keys:
+- narrative   # full Markdown above
+- outage_summary
+- incident_details  # ONLY the Incident-Narrative section text
 
-**The Response:**  
-Describe how monitoring alerted the team, the collaboration between stakeholders, and any escalations.
-
-**The Resolution:**  
-Summarize the mitigation steps taken, findings, and remaining unknowns.
-
-**Demo Execution:**  
-Outline the features or workflows you will demonstrate, focusing on investigation and resolution processes.
-
-**Talk Track for the SC (15-Minute Demo Flow):**  
-Provide a high-level timeline of the demo segments with approximate durations.
-
-**Outage Summary:**  
-Restate the one-line summary of the partial outage scenario.
-
-Return ONLY the JSON object with keys 'narrative', 'outage_summary', and 'incident_details'. Do not include any code fences.
+Do **NOT** wrap the JSON in code fences.
 """)
     # Instantiate LLM
     llm = get_llm()
@@ -229,19 +223,42 @@ def generate_well(organization, api_key, itsm_tools="ServiceNOW", observability_
     Generate a WELL-UNDERSTOOD incident narrative.
     This scenario reflects a low-severity incident that is resolved almost automatically.
     """
-    # Instruct the model to return a JSON object with narrative, outage_summary, and incident_details
+    # Instruct the model to return a structured well-understood narrative with clear sections
     well_incident_template = ChatPromptTemplate.from_template("""
 Your output must be a valid JSON object with exactly these keys:
-  - narrative: string, full prose narrative of the well-understood incident.
-  - outage_summary: string, one-line summary of the incident.
-  - incident_details: string, the detailed Incident Narrative section.
+  - narrative: string, the full prose narrative including all sections.
+  - outage_summary: string, a one-line summary of the well-understood outage scenario.
+  - incident_details: string, the detailed 'Incident Narrative' section.
 
 Context for the narrative (use these values in your story):
 - ITSM tools: {itsm_tools}
 - Observability tools: {observability_tools}
 - Services impacted: {service_names}
 
-Craft a Well-Understood incident scenario for the organization "{organization}". It should be low-severity, resolved automatically (zero-touch). Do not include RTF. Return ONLY the JSON object.
+Craft a structured and engaging demo story narrative for "{organization}" for a WELL-UNDERSTOOD incident (P5 severity, zero-touch resolution). Follow this format using explicit bold Markdown headings:
+
+**Scenario Overview:**  
+Provide a concise context of the low-severity incident and automation.
+
+**Incident Narrative:**  
+Detail the automated detection, symptoms, and confirmation of resolution.
+
+**The Response:**  
+Describe the system's automatic remediation steps and any notifications sent.
+
+**The Resolution:**  
+Summarize the outcome, time to resolution, and any safeguards activated.
+
+**Demo Execution:**  
+Outline the features to highlight zero-touch recovery and monitoring integrations.
+
+**Talk Track for the SC (10-Minute Demo Flow):**  
+Provide a high-level timeline of the demo segments with approximate durations.
+
+**Outage Summary:**  
+Restate the one-line summary of the well-understood outage scenario.
+
+Return ONLY the JSON object with keys 'narrative', 'outage_summary', and 'incident_details'. Do not include any code fences.
 """)
     # Instantiate LLM
     llm = get_llm()
@@ -381,7 +398,7 @@ def generate_partial_events(organization, api_key, itsm_tools, observability_too
 Generate a JSON array of events for a PARTIALLY UNDERSTOOD incident scenario for {organization}. The incident is moderate, with each event having a severity of "warning".
 Use only the provided observability tools as sources: {observability_tools}.
 Do not include events or sources from ITSM tools: {itsm_tools}.
-Generate 10 unique events over a period of 420 seconds starting from T0. 
+Generate 4 to 5 unique events over a period of 420 seconds starting from T0. 
 For each unique event, generate an event object with the following structure:
 {{
   "payload": {{
@@ -397,7 +414,7 @@ For each unique event, generate an event object with the following structure:
   "timing_metadata": {{ "schedule_offset": <number> }},
   "repeat_schedule": [ {{ "repeat_count": <number>, "repeat_offset": <number> }} ]
 }}
-Ensure that the repeats yield a total of between 50 and 70 events.
+Ensure that the repeats yield a total of between 20 and 25 events and that there is variability in number sent for each alert.
 Use the customer name {organization} and reference the service names: {service_names}.
 Incident Details: {incident_details}
 Outage Summary: {outage_summary}
@@ -451,31 +468,20 @@ def generate_partial_change_events(organization, api_key, itsm_tools, observabil
     """
     # Prompt for a single change event reflecting the root cause
     change_events_template = ChatPromptTemplate.from_template("""
-Generate a JSON array with exactly one PagerDuty Change Event API v2 object that represents the root cause
-of a PARTIALLY UNDERSTOOD incident for {organization}.
-Use only CI/CD tools (e.g., Jenkins, GitLab CI) or ServiceNow change requests reflecting the causal change.
-Include these contexts:
-- Affected services: {service_names}
-- Outage summary: {outage_summary}
-- Incident details: {incident_details}
+Generate **one** PagerDuty Change Event (API v2 JSON) that MINUTES EARLIER introduced a config drift.
 
-Return only the JSON array of the change event object following the PagerDuty Change Event API v2 spec, for example:
-[
-  {
-    "routing_key": "<INTEGRATION_KEY>",
-    "event_action": "trigger",
-    "payload": {
-      "summary": "<short summary of change>",
-      "timestamp": "<ISO8601 timestamp>",
-      "source": "<CI/CD pipeline or change ID>",
-      "custom_details": {
-        "change_ticket": "<ticket ID>",
-        "environment": "<environment>"
-      }
-    }
-  }
-]
-Do not include code fences.
+**Context**
+- organization: {organization}
+- system changed: Infer based on service provided, industry and core_system identified in events
+- change type: infra-as-code deploy, DB parameter tweak, feature-flag flip, etc.
+- ⚠️  **The change event must NOT reference any outage, incident, symptoms, or alerts.**  
+  It should read like a routine operational change recorded by a CI/CD or ITSM system.
+
+**Required keys**
+routing_key, event_action="trigger", payload.summary (≤90 chars), payload.timestamp="{{ timestamp(-2700, -900) }}", payload.source (e.g. “GitLab CI Pipeline #8172”),
+payload.custom_details: {{"change_ticket": "<SN CHG-ID>", "environment": "<prod|stage>", "author": "<name>"}}
+
+Return a JSON array with that single object, no code fences.
 """)
     llm = get_llm()
     chain = LLMChain(llm=llm, prompt=change_events_template, verbose=True)
@@ -506,6 +512,71 @@ Do not include code fences.
         cd = ev_payload.setdefault('custom_details', {})
         cd['change_ticket'] = "{{ 'CHG' + faker.datatype.number({ min: 10000, max: 999999 }) }}"
         cd['environment'] = "{{ faker.helpers.arrayElement(['production','staging','development','testing']) }}"
+        ev_payload['custom_details'] = cd
+    return json.dumps(change_events, indent=2)
+  
+def generate_well_change_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
+    """
+    Generate a JSON array with exactly one PagerDuty Change Event API v2 object representing the automated remediation
+    or configuration change for a WELL-UNDERSTOOD incident scenario.
+    """
+    # Prompt for a single change event reflecting the automated remediation action
+    change_events_template = ChatPromptTemplate.from_template("""
+Generate a JSON array with exactly one PagerDuty Change Event API v2 object that represents the automated remediation
+or configuration change for a WELL-UNDERSTOOD incident for {organization}.
+Use only CI/CD tools (e.g., Jenkins, GitLab CI) or ServiceNow change requests reflecting the remediation action.
+Include these contexts:
+- Affected services: {service_names}
+- Outage summary: {outage_summary}
+- Incident details: {incident_details}
+
+Return only the JSON array of the change event object following the PagerDuty Change Event API v2 spec, for example:
+[
+  {{
+    "routing_key": "<INTEGRATION_KEY>",
+    "event_action": "trigger",
+    "payload": {{
+      "summary": "<short summary of remediation change>",
+      "timestamp": "<ISO8601 timestamp>",
+      "source": "<CI/CD pipeline or change ID>",
+      "custom_details": {{
+        "automation_job_id": "<job ID>",
+        "action_type": "<type of automated action>"
+      }}
+    }}
+  }}
+]
+Do not include any code fences.
+""")
+    llm = get_llm()
+    chain = LLMChain(llm=llm, prompt=change_events_template, verbose=True)
+    inputs = {
+        "organization": organization,
+        "itsm_tools": itsm_tools,
+        "observability_tools": observability_tools,
+        "service_names": service_names,
+        "outage_summary": outage_summary,
+        "incident_details": incident_details
+    }
+    # Generate and retry if blank
+    raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()
+    # Strip markdown fences if present
+    if raw.startswith('```') and raw.endswith('```'):
+        raw = raw.strip('`').strip()
+    # Parse JSON output
+    try:
+        change_events = json.loads(raw)
+    except Exception as e:
+        logging.error(f"Failed to parse JSON well change events: {e}\nRaw output: {raw}")
+        raise
+    # Inject placeholder tokens for timestamp and custom details
+    for ev in change_events:
+        ev_payload = ev.setdefault('payload', {})
+        # Use a timestamp placeholder between 30m and 60s before now
+        ev_payload['timestamp'] = '{{ timestamp(-1800, -60) }}'
+        cd = ev_payload.setdefault('custom_details', {})
+        cd['automation_job_id'] = '{{ faker.datatype.uuid() }}'
+        cd['action_type'] = "{{ faker.helpers.arrayElement(['autoscale','hotfix_deploy','config_rollback']) }}"
         ev_payload['custom_details'] = cd
     return json.dumps(change_events, indent=2)
 
@@ -568,13 +639,23 @@ Output a properly formatted JSON array.
     except Exception as e:
         logging.error(f"Failed to parse JSON well events: {e}\nRaw output: {raw}")
         raise
-    # Inject faker placeholders into payloads for dynamic values
+    # Enhance each event: swap description into summary, inject faker placeholders
     for ev in events:
         ev_payload = ev.setdefault('payload', {})
-        ev_payload['event_id'] = '{{ faker.datatype.uuid() }}'
-        ev_payload['hostname'] = '{{ faker.internet.domainName() }}'
-        ev_payload['ip_address'] = '{{ faker.internet.ip() }}'
-    # Return the augmented JSON with placeholders
+        # Ensure custom_details exists
+        cd = ev_payload.setdefault('custom_details', {})
+        # Swap summary and description if description field is present
+        if 'description' in cd:
+            old_summary = ev_payload.get('summary', '')
+            ev_payload['summary'] = cd.get('description', old_summary)
+            cd['description'] = old_summary
+        # Inject placeholder metadata
+        cd['event_id'] = '{{ faker.datatype.uuid() }}'
+        cd['hostname'] = '{{ faker.internet.domainName() }}'
+        cd['ip_address'] = '{{ faker.internet.ip() }}'
+        cd['cluster_name'] = '{{ faker.commerce.department() + "-cluster" }}'
+        ev_payload['custom_details'] = cd
+    # Return the augmented JSON with placeholders intact
     return json.dumps(events, indent=2)
 
 def generate_major_change_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
