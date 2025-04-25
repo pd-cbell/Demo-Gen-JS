@@ -39,39 +39,6 @@ exports.handleGenerate = async (req, res) => {
     // Python service returns an object with 'message', 'narratives', 'events', and optional 'change_events'
     const result = response.data;
 
-    // Optionally, save the returned narratives and events to local files
-    const orgDir = path.join(__dirname, '../../generated_files', sanitizeOrg(org_name));
-    if (!fs.existsSync(orgDir)) {
-      fs.mkdirSync(orgDir, { recursive: true });
-    }
-    const timestamp = new Date().toISOString().replace(/[:.-]/g, '');
-    // Save files for each scenario, including change events if provided
-    for (const scenario of scenarios) {
-      // Narrative file
-      if (result.narratives && result.narratives[scenario]) {
-        fs.writeFileSync(
-          path.join(orgDir, `${scenario}_narrative_${timestamp}.txt`),
-          result.narratives[scenario],
-          'utf-8'
-        );
-      }
-      // Event payloads
-      if (result.events && result.events[scenario]) {
-        fs.writeFileSync(
-          path.join(orgDir, `${scenario}_events_${timestamp}.json`),
-          result.events[scenario],
-          'utf-8'
-        );
-      }
-      // Change events (e.g., for major scenario)
-      if (result.change_events && result.change_events[scenario]) {
-        fs.writeFileSync(
-          path.join(orgDir, `${scenario}_change_events_${timestamp}.json`),
-          result.change_events[scenario],
-          'utf-8'
-        );
-      }
-    }
 
     // Return the full generation result, including narratives, events, and change events
     return res.json({
