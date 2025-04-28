@@ -54,3 +54,53 @@ exports.handleGenerateSopInline = async (req, res) => {
     return res.status(status).json({ message });
   }
 };
+/**
+ * Controller to generate a blended SOP from multiple events in a file.
+ * Expects JSON body with:
+ *   - org_name: string
+ *   - filename: string
+ *   - event_indices: array of zero-based indices
+ * Returns { sop_text } without persisting a file.
+ */
+exports.handleGenerateSopBlended = async (req, res) => {
+  try {
+    const { org_name, filename, event_indices } = req.body;
+    if (!org_name || !filename || !Array.isArray(event_indices) || event_indices.length < 2) {
+      return res.status(400).json({ message: 'org_name, filename, and at least two event_indices are required.' });
+    }
+    const fs = require('fs');
+    const path = require('path');
+    // Locate the file under generated_files
+    const generatedDir = path.join(__dirname, '..', '..', 'generated_files', org_name);
+    const filePath = path.join(generatedDir, filename);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: `File ${filename} not found for org ${org_name}.` });
+    }
+    // Load and parse events
+    let raw = fs.readFileSync(filePath, 'utf8');
+    let events;
+    try {
+      events = JSON.parse(raw);
+    } catch (e) {
+      return res.status(500).json({ message: `Error parsing JSON: ${e.message}` });
+    }
+    const eventsList = Array.isArray(events) ? events : [events];
+    // Select specified events
+    const selected = event_indices
+      .map(i => eventsList[i])
+      .filter(ev => ev !== undefined);
+    if (selected.length < 2) {
+      return res.status(400).json({ message: 'No valid events found for the given indices.' });
+    }
+    // Call the inline SOP endpoint
+    const axios = require('axios');
+    const sopInlineURL = process.env.PYTHON_SOP_INLINE_URL || 'http://localhost:5001/api/generate_sop_inline';
+    const response = await axios.post(sopInlineURL, { events: selected });
+    return res.json(response.data);
+  } catch (error) {
+    console.error('Error generating blended SOP:', error.response ? error.response.data : error.message);
+    const status = error.response?.status || 500;
+    const message = error.response?.data?.message || 'Internal server error';
+    return res.status(status).json({ message });
+  }
+};

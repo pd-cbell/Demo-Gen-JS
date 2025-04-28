@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, url_for, make_response
 import json
 from event_sender import event_sender, get_files, event_sender_summary, event_sender_send, load_event_file, PAGERDUTY_API_URL
-from sop_generator import generate_sop
+from sop_generator import generate_sop, generate_sop_blended
 import os
 import datetime
 import utils
@@ -441,17 +441,30 @@ def api_generate_sop():
 @app.route('/api/generate_sop_inline', methods=['POST'])
 def api_generate_sop_inline():
     """
-    Generate a Standard Operating Procedure (SOP) directly from a provided event payload JSON.
-    Request body: JSON object representing the event (e.g., with fields title, description, custom_details, etc.).
+    Generate a Standard Operating Procedure (SOP) for provided event data.
+    If the payload includes an "events" list, all events will be used to generate a blended SOP.
+    Request body:
+      - single event payload as JSON object, or
+      - { "events": [ ... ] } to blend multiple alerts
     Returns JSON with:
       - sop_text: the generated Markdown SOP text
     Does not persist any file.
     """
     data = request.get_json() or {}
     if not isinstance(data, dict) or not data:
-        return {'message': 'Invalid or empty payload. Please provide a JSON object of event data.'}, 400
+        return {'message': 'Invalid or empty payload. Please provide event data.'}, 400
+    # Determine if this is a blended request (multiple events)
     try:
-        sop_text = generate_sop(data)
+        if 'events' in data and isinstance(data['events'], list) and len(data['events']) > 1:
+            # Use blended SOP template for multiple events
+            sop_text = generate_sop_blended(data['events'])
+        else:
+            # Single event SOP
+            # If wrapped in {events: [...]}, extract first or treat entire object
+            if 'events' in data and isinstance(data['events'], list) and len(data['events']) == 1:
+                sop_text = generate_sop(data['events'][0])
+            else:
+                sop_text = generate_sop(data)
         return {'sop_text': sop_text}, 200
     except Exception as e:
         return {'message': f'Error generating SOP: {e}'}, 500

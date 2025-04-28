@@ -15,6 +15,9 @@ const SopGenerator = () => {
   const [selectedIndices, setSelectedIndices] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [results, setResults] = useState([]);
+  // Blended SOP state
+  const [isGeneratingBlended, setIsGeneratingBlended] = useState(false);
+  const [blendedSop, setBlendedSop] = useState(null);
 
   useEffect(() => {
     // Fetch list of organizations
@@ -92,6 +95,27 @@ const SopGenerator = () => {
       console.error('Error generating SOPs:', e);
     } finally {
       setIsGenerating(false);
+    }
+  };
+  
+  // Generate a blended SOP from multiple selected events
+  const handleGenerateBlended = async () => {
+    if (!selectedOrg || !selectedFile || selectedIndices.length < 2) return;
+    setIsGeneratingBlended(true);
+    setBlendedSop(null);
+    try {
+      const response = await axios.post(`${API_BASE}/generate_sop/blended`, {
+        org_name: selectedOrg,
+        filename: selectedFile,
+        event_indices: selectedIndices
+      });
+      setBlendedSop({ sopText: response.data.sop_text });
+    } catch (err) {
+      console.error('Error generating blended SOP:', err);
+      const errMsg = err.response?.data?.message || err.message;
+      setBlendedSop({ error: errMsg });
+    } finally {
+      setIsGeneratingBlended(false);
     }
   };
 
@@ -172,6 +196,15 @@ const SopGenerator = () => {
               >
                 {isGenerating ? 'Generating SOPs...' : 'Generate SOP(s)'}
               </button>
+              {selectedIndices.length > 1 && (
+                <button
+                  className="btn btn-secondary ml-2"
+                  onClick={handleGenerateBlended}
+                  disabled={isGeneratingBlended}
+                >
+                  {isGeneratingBlended ? 'Generating Blended SOP...' : 'Generate Blended SOP'}
+                </button>
+              )}
             </div>
           )}
 
@@ -198,6 +231,18 @@ const SopGenerator = () => {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+          {blendedSop && (
+            <div className="mt-4">
+              <h3>Blended SOP</h3>
+              {blendedSop.error ? (
+                <p className="text-danger">Error: {blendedSop.error}</p>
+              ) : (
+                <div>
+                  <pre>{blendedSop.sopText}</pre>
+                </div>
+              )}
             </div>
           )}
 

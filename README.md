@@ -95,6 +95,7 @@ npm start
 
 - `POST /api/generate_sop` - Generate a Standard Operating Procedure (SOP) in Markdown for a specified event file. Request body: `{ org_name, filename, event_index }`. Returns `{ sop_text, sop_filename }` and saves the SOP `.md` file under `generated_files/{org}`.
 - `POST /api/generate_sop/inline` - Generate an SOP Markdown directly from a provided event payload JSON. Request body: JSON object with event fields (e.g., title, description, custom_details). Returns `{ sop_text }` without persisting a file.
+- `POST /api/generate_sop/blended` - Generate a blended SOP Markdown for multiple events in a single JSON file. Request body: `{ org_name, filename, event_indices: number[] }`. Returns `{ sop_text }` without persisting a file.
 
 **Event Sending**
   

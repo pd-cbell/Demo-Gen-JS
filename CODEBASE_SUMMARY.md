@@ -33,6 +33,7 @@
    - `GET /download/<org>/<filename>`: Download files as attachments.
   
    - `POST /api/generate_sop`: Generate a Standard Operating Procedure (SOP) in Markdown for a specified alert/event file. Returns SOP text and filename, and persists the SOP alongside other artifacts.
+   - `POST /api/generate_sop_inline`: Generate a Standard Operating Procedure (SOP) directly from provided event payload JSON. Accepts either a single event object or a list under the `events` key to generate a blended SOP. Returns SOP text without persisting a file.
    - `POST /api/generate_sop_inline`: Generate a Standard Operating Procedure (SOP) directly from provided event payload JSON. Returns SOP text without persisting a file.
   
    - `GET /preview/<org>/<filename>/postman`: Export events JSON as a Postman collection.
@@ -69,6 +70,7 @@
  - `src/routes/sop.js`:
    - `POST /api/generate_sop` endpoint to proxy SOP generation requests to the Python `gen_service` and return SOP text and filename.
    - `POST /api/generate_sop/inline` endpoint to proxy inline SOP generation requests: accepts a JSON event payload and returns SOP text without persisting a file.
+   - `POST /api/generate_sop/blended` endpoint to proxy blended SOP requests: select multiple events in a file and return a single combined SOP text without persisting a file.
  - `src/controllers/sopController.js`: Handles validation and forwarding of SOP generation requests; persists SOP `.md` files under `generated_files/<org>`.
  - `generated_files/`: Directory storing per-organization output files: narrative `.txt`, event `.json`, and SOP `.md` files.
  - `package.json`: Node.js dependencies and scripts (`npm start`).

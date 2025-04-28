@@ -19,6 +19,7 @@ app.use(cors(corsOptions));
 app.options('/api/generate', cors(corsOptions));
 app.options('/api/events/send', cors(corsOptions));
 app.options('/api/generate_sop', cors(corsOptions));
+app.options('/api/generate_sop/blended', cors(corsOptions));
 app.use(bodyParser.json());
 
 // Routes
