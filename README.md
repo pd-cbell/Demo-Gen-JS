@@ -125,8 +125,9 @@ npm start
 ## Usage
 
 1. Use the **Dashboard** in the React frontend (http://localhost:3000) to generate narratives and event payloads.
-2. Preview and edit generated JSON files on the **Preview** page; generate SOPs for JSON event files using the “Generate SOP” button.
-3. Send live events and monitor status using the **Event Sender** page in the React frontend.
+2. Preview and edit generated JSON files on the **Preview** page.
+3. Generate Standard Operating Procedures (SOPs) on the **SOP Generator** page: select an organization, choose an event JSON file, pick one or more events, and generate SOP markdown files for download.
+4. Send live events and monitor status using the **Event Sender** page in the React frontend.
    (Alternatively, use the legacy Flask UI at http://localhost:5001/event_sender.)
 
 ## Contributing

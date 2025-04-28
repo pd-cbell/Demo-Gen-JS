@@ -68,12 +68,13 @@
  ### frontend/ (React, port 3000)
  - Implements a React application bootstrapped with Create React App, serving the UI at http://localhost:3000.
  - Navigation & routing (via React Router):
-   - `/` (Dashboard): Select incident scenarios (major, partial, well), enter parameters (organization, ITSM tools, observability tools, service names), and generate narratives & event payloads via the backend `/api/generate` endpoint.
+   - `/` (Dashboard): Select incident scenarios (`major`, `partial`, `well`), enter parameters (organization, ITSM tools, observability tools, service names), and generate narratives & event payloads via the backend `/api/generate` endpoint.
+   - `/preview` (Preview): Browse organizations and generated files, view and edit content with a Markdown/JSON editor, save changes (`POST /api/preview/:org/:file`), and download files (`GET /api/download/:org/:file`).
+   - `/sop-generator` (SOP Generator): Select an organization and event JSON file, pick one or more events, generate Standard Operating Procedures via `POST /api/generate_sop`, and download the resulting Markdown `.md` files.
    - `/event-sender` (Event Sender): Browse generated event JSON files, enter PagerDuty routing key, send events using Server-Sent Events (`/api/events/stream`), and view schedule summaries and results.
- - `/preview` (Preview): Browse organizations and generated files, view and edit content with a Markdown/JSON editor, generate SOPs for JSON event files (via `POST /api/generate_sop`), save changes (`POST /api/preview/:org/:file`), and download files (`GET /api/download/:org/:file`).
  - `src/`: Source code including:
    - `App.js`: Main application routing and navigation.
-   - `pages/`: `Dashboard.js`, `EventSender.js`, `Preview.js`.
+   - `pages/`: `Dashboard.js`, `EventSender.js`, `Preview.js`, `SopGenerator.js`.
    - `promptTemplates.js`: Templates for generation prompts.
  - `public/`: Static HTML and assets.
  - `package.json`: Frontend dependencies (React, React Router, Axios, Bootstrap, react-simplemde-editor) and scripts (`npm start`, `npm test`, `npm run build`).

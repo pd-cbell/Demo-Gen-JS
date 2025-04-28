@@ -11,18 +11,38 @@ def generate_sop(event_payload: dict) -> str:
     payload_str = json.dumps(event_payload, indent=2)
     # Define the SOP prompt template
     sop_prompt = ChatPromptTemplate.from_template("""
-You are a Site Reliability Engineer drafting a Standard Operating Procedure (SOP) for handling a specific alert. Given the following alert payload:
+You are a **Staff Site Reliability Engineer** coaching an on‑call engineer who has just been paged. Apply expert SRE best‑practices and pragmatic automation thinking.
 
+You are provided a PagerDuty alert payload:
+
+```json
 {alert_payload}
+```
 
-Please produce a clear, step-by-step SOP in Markdown format with the following sections (use headings):
-- Triage
-- Systems or Dashboards that would be reviewed
-- Diagnostics that would be checked (e.g. Disk space, tablespace, running processes)
-- Likely next steps
-- Estimated Time Required in minutes (if multiple people needed, include total time in man-hours)                                                  
+Generate a runbook / SOP in **Markdown** (no code‑block fences in the output) using **exactly** these section headings and in this order:
 
-Return only the SOP text without any additional commentary or code fences.
+### Overview  
+### Triage  
+* In **Triage**, list each check as **Command → Purpose → Validation**.  
+  *Example: `traceroute api.example.com` → detect network hops → expect <50 ms total; or `SELECT tablespace_name, pct_free FROM dba_free_space` → ensure >15 % free.*  
+* Flag which of the checks could be automated via PagerDuty Workflows or Process Automation.  
+### Escalation  
+### Communication  
+### Remediation  
+### Verification  
+### Post‑Incident Review  
+
+**Formatting & Content Rules**
+
+* Start every bullet with an imperative verb (e.g., “Check…”, “Run…”, “Query…”).  
+* Use **Escalation** to state clear SEV thresholds and the next team/rotation to page.  
+* In **Communication**, describe stakeholder updates (status page, Slack channel, exec briefing) and recommended cadence.  
+* Under **Remediation**, include a table with columns **Manual Step | Automatable Step | Tool / Script Suggestion** and propose concrete automation candidates (e.g., “Terraform rollback plan”, “Rundeck job”, “Kubernetes failover script”).  
+* In **Verification**, outline how to confirm recovery with health‑checks or synthetic tests.  
+* **Post‑Incident Review** should list data to collect automatically (timelines, metrics deltas, chat transcripts) and top follow‑up actions.  
+* Clearly mark automation opportunities whenever a manual step could be scripted.  
+
+Return only the Markdown SOP text, no additional commentary.
 """)
     # Instantiate a configured LLM (with temperature fallback)
     # Use default temperature settings
