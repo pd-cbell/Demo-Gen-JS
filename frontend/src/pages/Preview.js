@@ -15,8 +15,6 @@ const Preview = () => {
   const [content, setContent] = useState('');
   const [jsonData, setJsonData] = useState(null);
   const [jsonError, setJsonError] = useState(null);
-  // SOP generation state
-  const [isGeneratingSop, setIsGeneratingSop] = useState(false);
 
   useEffect(() => {
     // Fetch list of organizations
@@ -51,30 +49,6 @@ const Preview = () => {
       .catch((err) => console.error(err));
   };
   
-  // Generate SOP for the selected event JSON file
-  const handleGenerateSop = async () => {
-    if (!selectedOrg || !selectedFile) return;
-    setIsGeneratingSop(true);
-    try {
-      const response = await axios.post('http://localhost:5002/api/generate_sop', {
-        org_name: selectedOrg,
-        filename: selectedFile,
-        event_index: 0
-      });
-      const { sop_text, sop_filename } = response.data;
-      // Refresh file list and select new SOP file
-      fetchFiles(selectedOrg);
-      setSelectedFile(sop_filename);
-      // Load SOP content into editor
-      setContent(sop_text);
-    } catch (err) {
-      console.error('Error generating SOP:', err);
-      const errMsg = err.response?.data?.message || 'Error generating SOP.';
-      alert(errMsg);
-    } finally {
-      setIsGeneratingSop(false);
-    }
-  };
 
   return (
     <div>
@@ -150,16 +124,6 @@ const Preview = () => {
                 }
               >
                 Export to Postman
-              </button>
-            )}
-            {/* Generate SOP for JSON event files */}
-            {selectedFile.toLowerCase().endsWith('.json') && (
-              <button
-                className="btn btn-warning ml-2"
-                onClick={handleGenerateSop}
-                disabled={isGeneratingSop}
-              >
-                {isGeneratingSop ? 'Generating SOP...' : 'Generate SOP'}
               </button>
             )}
           </div>
