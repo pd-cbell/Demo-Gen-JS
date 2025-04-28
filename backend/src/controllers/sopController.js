@@ -1,0 +1,35 @@
+const axios = require('axios');
+
+/**
+ * Controller to handle SOP generation by proxying to the Python gen_service.
+ * Expects JSON body with:
+ *   - org_name: string
+ *   - filename: string
+ *   - event_index: number (optional, zero-based, defaults to 0)
+ */
+exports.handleGenerateSop = async (req, res) => {
+  try {
+    const { org_name, filename, event_index = 0 } = req.body;
+    // Validate required parameters
+    if (!org_name || !filename) {
+      return res.status(400).json({ message: 'Both org_name and filename are required.' });
+    }
+    const idx = Number(event_index);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({ message: 'Invalid event_index provided.' });
+    }
+    // Build request payload
+    const payload = { org_name, filename, event_index: idx };
+    // Python gen_service SOP endpoint (can override via env)
+    const sopServiceURL = process.env.PYTHON_SOP_URL || 'http://localhost:5001/api/generate_sop';
+    // Forward request to Python service
+    const response = await axios.post(sopServiceURL, payload);
+    // Return the SOP text and filename from Python service
+    return res.json(response.data);
+  } catch (error) {
+    console.error('Error generating SOP:', error.response ? error.response.data : error.message);
+    const status = error.response?.status || 500;
+    const message = error.response?.data?.message || 'Internal server error';
+    return res.status(status).json({ message });
+  }
+};

@@ -90,6 +90,10 @@ npm start
 - `POST /api/preview/:org/:file` - Save updated content of a specific event JSON file.
 - `GET /api/preview/download/:org/:file` - Download a specific event JSON file.
   
+**SOP Generation**
+
+- `POST /api/generate_sop` - Generate a Standard Operating Procedure (SOP) in Markdown for a specified event file. Request body: `{ org_name, filename, event_index }`. Returns `{ sop_text, sop_filename }` and saves the SOP `.md` file under `generated_files/{org}`.
+
 **Event Sending**
   
 - `POST /api/events/send` - Send a batch of events (incident or change). Include `org`, `filename`, and optionally `routing_key` in the request body. Returns send results for each event.
@@ -121,7 +125,7 @@ npm start
 ## Usage
 
 1. Use the **Dashboard** in the React frontend (http://localhost:3000) to generate narratives and event payloads.
-2. Preview and edit generated JSON files on the **Preview** page.
+2. Preview and edit generated JSON files on the **Preview** page; generate SOPs for JSON event files using the “Generate SOP” button.
 3. Send live events and monitor status using the **Event Sender** page in the React frontend.
    (Alternatively, use the legacy Flask UI at http://localhost:5001/event_sender.)
 

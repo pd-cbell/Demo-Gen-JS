@@ -35,12 +35,22 @@ def get_llm(default_temp: float = 1.0):
         max_tokens = int(os.getenv("OPENAI_MAX_TOKENS", "16384"))
     except ValueError:
         max_tokens = 16384
-    return ChatOpenAI(
-        temperature=temp,
-        model_name=model_name,
-        model_kwargs={"max_completion_tokens": max_tokens},
-        openai_api_key=api_key
-    )
+    # Try instantiating ChatOpenAI, fallback if the model does not support temperature
+    try:
+        return ChatOpenAI(
+            temperature=temp,
+            model_name=model_name,
+            model_kwargs={"max_completion_tokens": max_tokens},
+            openai_api_key=api_key
+        )
+    except TypeError as err:
+        logging.warning(f"Model {model_name} does not support 'temperature' parameter: {err}. Retrying without temperature.")
+        # Retry without temperature parameter
+        return ChatOpenAI(
+            model_name=model_name,
+            model_kwargs={"max_completion_tokens": max_tokens},
+            openai_api_key=api_key
+        )
 
 def strip_rtf(text):
     """

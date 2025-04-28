@@ -31,6 +31,9 @@
    - `GET/POST /event_sender*`: Web UI endpoints to preview, summarize, and send events to PagerDuty.
    - `GET /preview`, `/preview/<org>`, `/preview/<org>/<filename>`: Preview generated narrative and event files; support editing and cleanup.
    - `GET /download/<org>/<filename>`: Download files as attachments.
+  
+   - `POST /api/generate_sop`: Generate a Standard Operating Procedure (SOP) in Markdown for a specified alert/event file. Returns SOP text and filename, and persists the SOP alongside other artifacts.
+  
    - `GET /preview/<org>/<filename>/postman`: Export events JSON as a Postman collection.
  - `utils.py`: Core generation logic using LangChain LLMChain:
    - `generate_major`, `generate_partial`, `generate_well`: Produce structured JSON narratives with `narrative`, `outage_summary`, and `incident_details`.
@@ -56,7 +59,9 @@
  - `src/controllers/eventController.js`: Loads event definitions, computes send schedules, and delegates to `eventService` for actual dispatch.
  - `src/services/eventService.js`: Core logic to parse timing metadata, schedule and repeat HTTP calls to PagerDuty (`events.pagerduty.com/v2/enqueue`), and compute schedule summaries.
  - `src/routes/preview.js`: File-browser API to list organizations (`/api/organizations`), files (`/api/files/:org`), preview/edit files (`/api/preview/:org/:file`), and download outputs (`/api/download/:org/:file`).
- - `generated_files/`: Directory storing per-organization output files: narrative `.txt` and event `.json`.
+ - `src/routes/sop.js`: `POST /api/generate_sop` endpoint to proxy SOP generation requests to the Python `gen_service` and return SOP text and filename.
+ - `src/controllers/sopController.js`: Handles validation and forwarding of SOP generation requests; persists SOP `.md` files under `generated_files/<org>`.
+ - `generated_files/`: Directory storing per-organization output files: narrative `.txt`, event `.json`, and SOP `.md` files.
  - `package.json`: Node.js dependencies and scripts (`npm start`).
  - `Dockerfile`: Docker configuration for containerizing the backend service.
 
@@ -65,7 +70,7 @@
  - Navigation & routing (via React Router):
    - `/` (Dashboard): Select incident scenarios (major, partial, well), enter parameters (organization, ITSM tools, observability tools, service names), and generate narratives & event payloads via the backend `/api/generate` endpoint.
    - `/event-sender` (Event Sender): Browse generated event JSON files, enter PagerDuty routing key, send events using Server-Sent Events (`/api/events/stream`), and view schedule summaries and results.
-   - `/preview` (Preview): Browse organizations and generated files, view and edit content with a Markdown/JSON editor, save changes (`POST /api/preview/:org/:file`), and download files (`GET /api/download/:org/:file`).
+ - `/preview` (Preview): Browse organizations and generated files, view and edit content with a Markdown/JSON editor, generate SOPs for JSON event files (via `POST /api/generate_sop`), save changes (`POST /api/preview/:org/:file`), and download files (`GET /api/download/:org/:file`).
  - `src/`: Source code including:
    - `App.js`: Main application routing and navigation.
    - `pages/`: `Dashboard.js`, `EventSender.js`, `Preview.js`.

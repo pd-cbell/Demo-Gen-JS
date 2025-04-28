@@ -18,6 +18,7 @@ app.use(cors(corsOptions));
 // Preflight CORS support for specific API routes
 app.options('/api/generate', cors(corsOptions));
 app.options('/api/events/send', cors(corsOptions));
+app.options('/api/generate_sop', cors(corsOptions));
 app.use(bodyParser.json());
 
 // Routes
@@ -25,6 +26,9 @@ const generateRoutes = require('./routes/generate');
 const eventRoutes = require('./routes/events');
 app.use('/api/events', eventRoutes);
 app.use('/api/generate', generateRoutes);
+// SOP generation proxy
+const sopRoutes = require('./routes/sop');
+app.use('/api/generate_sop', sopRoutes);
 // Preview and file browsing routes
 const previewRoutes = require('./routes/preview');
 app.use('/api', previewRoutes);

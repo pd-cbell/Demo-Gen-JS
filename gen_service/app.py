@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, url_for, make_response
 import json
 from event_sender import event_sender, get_files, event_sender_summary, event_sender_send, load_event_file, PAGERDUTY_API_URL
+from sop_generator import generate_sop
 import os
 import datetime
 import utils
@@ -379,6 +380,63 @@ def export_postman(org, filename):
     resp.headers['Content-Type'] = 'application/json'
     resp.headers['Content-Disposition'] = f'attachment; filename={org}_{filename}_postman_collection.json'
     return resp
+
+@app.route('/api/generate_sop', methods=['POST'])
+def api_generate_sop():
+    """
+    Generate a Standard Operating Procedure (SOP) for a specified alert file.
+    Request JSON must include:
+      - org_name: sanitized organization name
+      - filename: name of the JSON events file under generated_files/{org}
+      - event_index: optional zero-based index of the event in the array (default 0)
+    """
+    data = request.get_json() or {}
+    org_name = data.get('org_name')
+    filename = data.get('filename')
+    event_index = data.get('event_index', 0)
+    # Validate required parameters
+    if not org_name or not filename:
+        return {'message': 'Both org_name and filename are required.'}, 400
+    org_folder = os.path.join(app.config['GENERATED_FOLDER'], sanitize_org(org_name))
+    file_path = os.path.join(org_folder, filename)
+    if not os.path.isfile(file_path):
+        return {'message': f'File {filename} not found for org {org_name}.'}, 404
+    # Load the event JSON
+    try:
+        with open(file_path, 'r') as f:
+            raw = f.read()
+        try:
+            events = json.loads(raw)
+        except json.JSONDecodeError:
+            events = load_event_file(org_name, filename)
+    except Exception as e:
+        return {'message': f'Error reading file: {e}'}, 500
+    # Normalize to list
+    if not isinstance(events, list):
+        events_list = [events]
+    else:
+        events_list = events
+    # Parse and validate event_index
+    try:
+        idx = int(event_index)
+    except (ValueError, TypeError):
+        idx = 0
+    if idx < 0 or idx >= len(events_list):
+        return {'message': f'event_index {idx} out of range.'}, 400
+    event_payload = events_list[idx]
+    # Generate the SOP text using the sop_generator
+    sop_text = generate_sop(event_payload)
+    # Persist SOP to a Markdown file alongside other artifacts
+    timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    base = os.path.splitext(filename)[0]
+    sop_filename = f"{base}_sop_{timestamp}.md"
+    sop_path = os.path.join(org_folder, sop_filename)
+    try:
+        with open(sop_path, 'w') as f:
+            f.write(sop_text)
+    except Exception as e:
+        return {'message': f'Error saving SOP file: {e}'}, 500
+    return {'sop_text': sop_text, 'sop_filename': sop_filename}, 200
 
 if __name__ == '__main__':
     # Listen on all interfaces to allow Docker to map the port
