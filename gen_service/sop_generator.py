@@ -39,7 +39,8 @@ Generate a runbook / SOP in **Markdown** (no code-block fences in the output) us
 * In **Communication**, describe stakeholder updates (status page, Slack channel, exec briefing) and recommended cadence.  
 * Under **Remediation**, include a table with columns **Manual Step | Automatable Step | Tool / Script Suggestion** and propose concrete automation candidates (e.g., “Terraform rollback plan”, “Rundeck job”, “Kubernetes failover script”).  
 * In **Verification**, outline how to confirm recovery with health‑checks or synthetic tests.    
-* Clearly mark automation opportunities whenever a manual step could be scripted.  
+* Clearly mark automation opportunities whenever a manual step could be scripted. 
+* Ignore lines in the alert_payload that contain '{{ faker' when considering responses.
 * At the end of **each major section** (Triage, Escalation, Communication, Remediation, Verification) append two lines:  
   `**Estimated manual time:** <N min>`  
   `**Estimated time saved with PagerDuty Ops Cloud:** <N min>`  
@@ -93,6 +94,7 @@ Based on the combined alerts, outline immediate corrective actions to take.
 **Formatting & Content Rules**
 
 * Start every bullet with an imperative verb (e.g., “Check…”, “Run…”, “Query…”).  
+* Ignore lines in the alert_payload that contain '{{ faker' when considering responses.
 * For **every bullet** in all sections, append `— **Manual:** <N min>; **Saved with Ops Cloud:** <N min>` to quantify current effort vs. time saved when the step is automated with PagerDuty Operations Cloud. Infer which steps could be automated using PagerDuty workflows and Rundeck.
 * Use **Escalation** to state clear SEV thresholds and the next team/rotation to page.  
 * In **Communication**, describe stakeholder updates (status page, Slack channel, exec briefing) and recommended cadence.  
