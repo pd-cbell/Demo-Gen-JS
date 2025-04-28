@@ -4,6 +4,9 @@ const path = require('path');
 
 
 const router = express.Router();
+const axios = require('axios');
+// Base URL for the Python gen_service (export Postman collections)
+const PYTHON_SERVICE_BASE = process.env.PYTHON_SERVICE_BASE_URL || 'http://localhost:5001';
 
 // Directory containing generated files
 // __dirname is backend/src/routes, so go up two levels to reach backend/generated_files
@@ -72,6 +75,27 @@ router.get('/download/:org/:file', (req, res) => {
       console.error(`Error downloading file ${filePath}:`, err);
     }
   });
+});
+
+// Export events JSON as a Postman collection, preserving routing_key and timing metadata
+router.get('/postman/:org/:file', async (req, res) => {
+  const { org, file } = req.params;
+  const url = `${PYTHON_SERVICE_BASE}/preview/${org}/${file}/postman`;
+  try {
+    const response = await axios.get(url, { responseType: 'stream' });
+    // Forward headers for content type and disposition
+    if (response.headers['content-type']) {
+      res.set('Content-Type', response.headers['content-type']);
+    }
+    if (response.headers['content-disposition']) {
+      res.set('Content-Disposition', response.headers['content-disposition']);
+    }
+    response.data.pipe(res);
+  } catch (err) {
+    console.error('Error exporting Postman collection:', err.response ? err.response.data : err.message);
+    const status = err.response?.status || 500;
+    return res.status(status).json({ error: 'Failed to export Postman collection' });
+  }
 });
 
 module.exports = router;

@@ -438,6 +438,24 @@ def api_generate_sop():
         return {'message': f'Error saving SOP file: {e}'}, 500
     return {'sop_text': sop_text, 'sop_filename': sop_filename}, 200
 
+@app.route('/api/generate_sop_inline', methods=['POST'])
+def api_generate_sop_inline():
+    """
+    Generate a Standard Operating Procedure (SOP) directly from a provided event payload JSON.
+    Request body: JSON object representing the event (e.g., with fields title, description, custom_details, etc.).
+    Returns JSON with:
+      - sop_text: the generated Markdown SOP text
+    Does not persist any file.
+    """
+    data = request.get_json() or {}
+    if not isinstance(data, dict) or not data:
+        return {'message': 'Invalid or empty payload. Please provide a JSON object of event data.'}, 400
+    try:
+        sop_text = generate_sop(data)
+        return {'sop_text': sop_text}, 200
+    except Exception as e:
+        return {'message': f'Error generating SOP: {e}'}, 500
+
 if __name__ == '__main__':
     # Listen on all interfaces to allow Docker to map the port
     app.run(debug=True, host='0.0.0.0', port=5001)

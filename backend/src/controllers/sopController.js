@@ -33,3 +33,24 @@ exports.handleGenerateSop = async (req, res) => {
     return res.status(status).json({ message });
   }
 };
+/**
+ * Controller to generate an SOP inline from provided event data.
+ * Expects JSON body with arbitrary event payload fields (e.g., title, description, custom_details).
+ * Returns SOP text without persisting to file.
+ */
+exports.handleGenerateSopInline = async (req, res) => {
+  try {
+    const eventPayload = req.body;
+    if (!eventPayload || typeof eventPayload !== 'object') {
+      return res.status(400).json({ message: 'Invalid event payload. Expected a JSON object.' });
+    }
+    const sopInlineURL = process.env.PYTHON_SOP_INLINE_URL || 'http://localhost:5001/api/generate_sop_inline';
+    const response = await axios.post(sopInlineURL, eventPayload);
+    return res.json(response.data);
+  } catch (error) {
+    console.error('Error generating inline SOP:', error.response ? error.response.data : error.message);
+    const status = error.response?.status || 500;
+    const message = error.response?.data?.message || 'Internal server error';
+    return res.status(status).json({ message });
+  }
+};

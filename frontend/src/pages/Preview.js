@@ -138,6 +138,20 @@ const Preview = () => {
             >
               Download
             </button>
+            {/* Export events JSON as Postman collection */}
+            {selectedFile.toLowerCase().endsWith('.json') && (
+              <button
+                className="btn btn-info ml-2"
+                onClick={() =>
+                  window.open(
+                    `http://localhost:5002/api/postman/${selectedOrg}/${selectedFile}`,
+                    '_blank'
+                  )
+                }
+              >
+                Export to Postman
+              </button>
+            )}
             {/* Generate SOP for JSON event files */}
             {selectedFile.toLowerCase().endsWith('.json') && (
               <button

@@ -33,6 +33,7 @@
    - `GET /download/<org>/<filename>`: Download files as attachments.
   
    - `POST /api/generate_sop`: Generate a Standard Operating Procedure (SOP) in Markdown for a specified alert/event file. Returns SOP text and filename, and persists the SOP alongside other artifacts.
+   - `POST /api/generate_sop_inline`: Generate a Standard Operating Procedure (SOP) directly from provided event payload JSON. Returns SOP text without persisting a file.
   
    - `GET /preview/<org>/<filename>/postman`: Export events JSON as a Postman collection.
  - `utils.py`: Core generation logic using LangChain LLMChain:
@@ -58,8 +59,16 @@
  - `src/routes/events.js`: `/api/events/send` POST endpoint for batch event dispatch; `/api/events/stream` GET endpoint for Server-Sent Events (SSE) live streaming of send results.
  - `src/controllers/eventController.js`: Loads event definitions, computes send schedules, and delegates to `eventService` for actual dispatch.
  - `src/services/eventService.js`: Core logic to parse timing metadata, schedule and repeat HTTP calls to PagerDuty (`events.pagerduty.com/v2/enqueue`), and compute schedule summaries.
- - `src/routes/preview.js`: File-browser API to list organizations (`/api/organizations`), files (`/api/files/:org`), preview/edit files (`/api/preview/:org/:file`), and download outputs (`/api/download/:org/:file`).
- - `src/routes/sop.js`: `POST /api/generate_sop` endpoint to proxy SOP generation requests to the Python `gen_service` and return SOP text and filename.
+ - `src/routes/preview.js`: File-browser API:
+   - `GET /api/organizations` - list organization directories under `generated_files`.
+   - `GET /api/files/:org` - list files for a given organization.
+   - `GET /api/preview/:org/:file` - retrieve file content.
+   - `POST /api/preview/:org/:file` - save edited file content.
+   - `GET /api/download/:org/:file` - download a file.
+   - `GET /api/postman/:org/:file` - export events JSON as a Postman collection, preserving routing_key and timing metadata.
+ - `src/routes/sop.js`:
+   - `POST /api/generate_sop` endpoint to proxy SOP generation requests to the Python `gen_service` and return SOP text and filename.
+   - `POST /api/generate_sop/inline` endpoint to proxy inline SOP generation requests: accepts a JSON event payload and returns SOP text without persisting a file.
  - `src/controllers/sopController.js`: Handles validation and forwarding of SOP generation requests; persists SOP `.md` files under `generated_files/<org>`.
  - `generated_files/`: Directory storing per-organization output files: narrative `.txt`, event `.json`, and SOP `.md` files.
  - `package.json`: Node.js dependencies and scripts (`npm start`).

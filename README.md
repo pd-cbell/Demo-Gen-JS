@@ -83,16 +83,18 @@ npm start
 #### Backend API Endpoints
   
 **File Preview & Management**
-  
+
 - `GET /api/preview/organizations` - List available organization directories under `generated_files`.
 - `GET /api/preview/files/:org` - List event JSON files for a given organization.
 - `GET /api/preview/:org/:file` - Retrieve content of a specific event JSON file.
 - `POST /api/preview/:org/:file` - Save updated content of a specific event JSON file.
 - `GET /api/preview/download/:org/:file` - Download a specific event JSON file.
+- `GET /api/postman/:org/:file` - Export the events JSON file as a Postman collection, preserving routing_key and timing metadata. Returns a downloadable `.json` collection.
   
 **SOP Generation**
 
 - `POST /api/generate_sop` - Generate a Standard Operating Procedure (SOP) in Markdown for a specified event file. Request body: `{ org_name, filename, event_index }`. Returns `{ sop_text, sop_filename }` and saves the SOP `.md` file under `generated_files/{org}`.
+- `POST /api/generate_sop/inline` - Generate an SOP Markdown directly from a provided event payload JSON. Request body: JSON object with event fields (e.g., title, description, custom_details). Returns `{ sop_text }` without persisting a file.
 
 **Event Sending**
   
@@ -125,7 +127,7 @@ npm start
 ## Usage
 
 1. Use the **Dashboard** in the React frontend (http://localhost:3000) to generate narratives and event payloads.
-2. Preview and edit generated JSON files on the **Preview** page.
+2. Preview and edit generated JSON files on the **Preview** page; export any JSON file as a Postman collection via the “Export to Postman” button.
 3. Generate Standard Operating Procedures (SOPs) on the **SOP Generator** page: select an organization, choose an event JSON file, pick one or more events, and generate SOP markdown files for download.
 4. Send live events and monitor status using the **Event Sender** page in the React frontend.
    (Alternatively, use the legacy Flask UI at http://localhost:5001/event_sender.)
