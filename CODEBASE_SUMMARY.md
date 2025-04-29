@@ -91,6 +91,13 @@
  - `package.json`: Frontend dependencies (React, React Router, Axios, Bootstrap, react-simplemde-editor) and scripts (`npm start`, `npm test`, `npm run build`).
  - `Dockerfile`: Produces optimized production build container.
 
+## Recent Improvements
+- Replaced Lodash templating in `backend/src/services/eventService.js` with regex/function-based placeholder substitution, enhancing JSON parsing reliability.
+- Added compatibility alias so `faker.datatype.uuid()` maps to `faker.string.uuid()`, and removed escaped quotes around `'-cluster'` in cluster naming.
+- Updated `computeScheduleSummary` to normalize `repeat_schedule` whether provided as a number or array of objects.
+- Refactored event-generation prompts (`gen_service/utils.py`) to explicitly require `repeat_schedule` as an array of `{repeat_count, repeat_offset}` objects and removed unescaped JSON braces to resolve missing key errors.
+- Overhauled SSE stream handling in `backend/src/controllers/eventController.js` to track task completion and emit a single `end` event when all sends finish, preventing indefinite connections and ensuring proper headers.
+
  ## Key Technologies
 
  - Python 3.10+, Flask, LangChain, OpenAI SDK

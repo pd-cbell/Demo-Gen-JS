@@ -39,59 +39,41 @@ exports.streamEvents = async (req, res) => {
     // Send schedule summary as first event
     res.write(`event: schedule\n`);
     res.write(`data: ${JSON.stringify(schedule_summary)}\n\n`);
-    // Asynchronously schedule each event send and its repeats
+    // Build send tasks for each event and its repeats
     const sendTasks = [];
-    let maxDelay = 0;
     for (const ev of events) {
-      // Determine if this is a change event
       const isChange = ev.hasOwnProperty('routing_key') || ev.hasOwnProperty('links');
-      // Compute initial send delay (ms)
       const scheduleOffsetMs = ((ev.timing_metadata?.schedule_offset) || 0) * 1000;
       const summary = ev.payload?.summary || '';
       if (isChange) {
-        // Prepare change event payload, override routing_key
+        // Change event: only initial send
         const changeEvent = { ...ev, routing_key };
-        sendTasks.push({
-          delay: scheduleOffsetMs,
-          attempt: 'initial',
-          summary,
-          payload: changeEvent,
-          url: PAGERDUTY_CHANGE_URL,
-        });
-        maxDelay = Math.max(maxDelay, scheduleOffsetMs);
+        sendTasks.push({ delay: scheduleOffsetMs, attempt: 'initial', summary, payload: changeEvent, url: PAGERDUTY_CHANGE_URL });
       } else {
-        // Incident event
+        // Incident event: initial send
         const action = ev.event_action || 'trigger';
         const payload = { routing_key, event_action: action, payload: ev.payload };
-        // Initial send task
-        sendTasks.push({
-          delay: scheduleOffsetMs,
-          attempt: 'initial',
-          summary,
-          payload,
-          url: PAGERDUTY_API_URL,
-        });
-        maxDelay = Math.max(maxDelay, scheduleOffsetMs);
-        // Schedule repeats if any
-        const repeats = ev.repeat_schedule || [];
+        sendTasks.push({ delay: scheduleOffsetMs, attempt: 'initial', summary, payload, url: PAGERDUTY_API_URL });
+        // Repeats
+        const repeats = Array.isArray(ev.repeat_schedule) ? ev.repeat_schedule : [];
         for (const rpt of repeats) {
           const count = rpt.repeat_count || 0;
           const repOffsetMs = (rpt.repeat_offset || 0) * 1000;
           for (let i = 1; i <= count; i++) {
             const delay = scheduleOffsetMs + repOffsetMs * i;
-            sendTasks.push({
-              delay,
-              attempt: `repeat ${i}`,
-              summary,
-              payload,
-              url: PAGERDUTY_API_URL,
-            });
-            maxDelay = Math.max(maxDelay, delay);
+            sendTasks.push({ delay, attempt: `repeat ${i}`, summary, payload, url: PAGERDUTY_API_URL });
           }
         }
       }
     }
-    // Schedule all tasks
+    // If no tasks, end immediately
+    let tasksRemaining = sendTasks.length;
+    if (tasksRemaining === 0) {
+      res.write(`event: end\n`);
+      res.write(`data: {}\n\n`);
+      return res.end();
+    }
+    // Schedule tasks and close when done
     for (const task of sendTasks) {
       setTimeout(async () => {
         try {
@@ -104,14 +86,15 @@ exports.streamEvents = async (req, res) => {
           res.write(`event: result\n`);
           res.write(`data: ${JSON.stringify(errResult)}\n\n`);
         }
+        // Decrement and check for completion
+        tasksRemaining -= 1;
+        if (tasksRemaining <= 0) {
+          res.write(`event: end\n`);
+          res.write(`data: {}\n\n`);
+          res.end();
+        }
       }, task.delay);
     }
-    // Signal end of stream after all tasks have been scheduled
-    setTimeout(() => {
-      res.write(`event: end\n`);
-      res.write(`data: {}\n\n`);
-      res.end();
-    }, maxDelay + 1000);
   } catch (error) {
     console.error('Error in streamEvents:', error);
     res.write(`event: error\n`);

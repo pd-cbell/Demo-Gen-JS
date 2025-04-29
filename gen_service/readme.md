@@ -5,6 +5,13 @@ The `gen_service` is a Flask microservice for generating incident narratives and
 All outputs are saved under `backend/generated_files/<ORG>/`, where `<ORG>` is a sanitized organization name. Files are timestamped for easy organization.
 
 ## Key Features
+ 
+### Recent Changes
+- Prompts updated in `utils.py` to enforce `event_action: trigger` and require `repeat_schedule` as an array of `{repeat_count, repeat_offset}` objects for major, partial, and well event generators.
+- Placeholder rendering in `backend/src/services/eventService.js` replaced Lodash templating with regex-based evaluation using `timestamp()` and `faker` helpers, improving stability and eliminating syntax errors on raw JSON fragments.
+- Added alias so `faker.datatype.uuid()` now maps to `faker.string.uuid()`, and cleaned up escaped quotes around `'-cluster'` in `cluster_name` placeholders.
+- Enhanced `computeScheduleSummary` to normalize numeric and array `repeat_schedule` formats.
+- Refactored SSE logic in `backend/src/controllers/eventController.js` to track active send tasks and emit a single `end` event when all tasks complete; headers now always sent at start to prevent MIME errors.
 
 - **Incident Narrative Generation**
   - Structured JSON narratives for Major, Partial, and Well‑Understood incidents.

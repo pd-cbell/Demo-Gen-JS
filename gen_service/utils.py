@@ -291,11 +291,12 @@ Every event object must include the top-level key "event_action" set to "trigger
 1. Use only these observability tools for `"source"`: {observability_tools}.
 2. Create **8–10 unique alert objects** spanning 420 s (`timing_metadata.schedule_offset` 0‑420).
 3. Mix severities: "warning", "critical", and "error" across the alerts.
-4. Every alert must be a believable symptom (e.g., "Payment‑API 5xx rate", "SIS‑DB connections").
-5. Provide `"repeat_schedule"` as an **array of objects** (e.g., ` [{{"repeat_count": 6, "repeat_offset": 30}}] `), each with keys `"repeat_count"` and `"repeat_offset"`, so the total events land **between 50 and 70**.
+4. Every alert must be a believable symptom (e.g., "Payment‑API 5xx rate", "SIS‑DB connections"). Do not use the actual examples.
+5. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` (for example one element with repeat_count=6 and repeat_offset=30) so the total events land **between 50 and 70**.
 6. `payload.custom_details` MUST include  
    `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` and service_name must use a value from {service_names}.
-7. Include *one* special alert whose `custom_details` also contains `"major_failure": true`, '"CUJ Impacted": true' and a `schedule_offset` between 120s and 180s with a severity of Error.
+7. Include *one* **MAJOR** alert whose `custom_details` also contains `"major_failure": true`, '"CUJ Impacted": true' and a `schedule_offset` between 120s and 180s with a severity of Error that would systematically trigger a major incident.
+8. The '"summary"' most not include {organization} in the content.
 
 Return only the JSON array — no code fences.
 """)
@@ -343,7 +344,7 @@ def generate_partial_events(organization, api_key, itsm_tools, observability_too
     """
     Generate a JSON array of demo events for a PARTIALLY UNDERSTOOD incident scenario.
     
-    Generate 10 unique events with a repeat schedule so that the total events number between 50 and 70 over 420 seconds.
+    Generate 5 unique events with a repeat schedule so that the total events number between 50 and 70 over 420 seconds.
     Each event should have a severity of "warning".
     Use the customer name {organization} and reference the service names: {service_names}.
     Incident Details: {incident_details}
@@ -352,31 +353,21 @@ def generate_partial_events(organization, api_key, itsm_tools, observability_too
     Output a properly formatted JSON array.
     """
     partial_events_template = ChatPromptTemplate.from_template("""
-Generate a JSON array of events for a PARTIALLY UNDERSTOOD incident scenario for {organization}. The incident is moderate, with each event having a severity of "warning".
-Use only the provided observability tools as sources: {observability_tools}.
-Do not include events or sources from ITSM tools: {itsm_tools}.
-Generate 4 to 5 unique events over a period of 420 seconds starting from T0. 
-For each unique event, generate an event object with the following structure (use "trigger" for event_action):
-{{
-  "payload": {{
-      "summary": "<string>",
-      "severity": "warning",
-      "source": "<string>",
-      "component": "<string>",
-      "group": "<string>",
-      "class": "<string>",
-      "custom_details": {{ "service_name": "<string>", "<additional_context>": "<value>", ... }}
-  }},
-  "event_action": "trigger",
-  "timing_metadata": {{ "schedule_offset": <number> }},
-  "repeat_schedule": [ {{ "repeat_count": <number>, "repeat_offset": <number> }} ]
-}}
-Ensure that the repeats yield a total of between 20 and 25 events and that there is variability in number sent for each alert.
-Use the customer name {organization} and reference the service names: {service_names}.
-Incident Details: {incident_details}
-Outage Summary: {outage_summary}
-Do not include explicit timestamp values.
-Output a properly formatted JSON array.
+Generate a JSON **array** of events for a **PARTIALLY UNDERSTOOD** incident scenario at {organization}.
+Every event object must include the top-level key `"event_action"` set to `"trigger"`, and in its `"payload"` include the keys `"summary"`, `"severity"`, `"source"`, `"component"`, `"group"`, `"class"`, and `"custom_details"`.
+
+**Rules**
+1. Use only these observability tools for `"source"`: {observability_tools}.
+2. Create **4–5 unique alert objects** spanning 420 s (`timing_metadata.schedule_offset` 0–420).
+3. Each event must have `"severity"` set to `"warning" or "critical"`.
+4. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` (for example, one element with repeat_count=6 and repeat_offset=30) so the total events land **between 50 and 70**.
+5. `payload.custom_details` MUST include  
+   `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` and service_name must use a value from {service_names}.
+6. Do not reference the customer name `{organization}` and the services `{service_names}` in the summary.
+7. Infer realistic alert information from Incident Details: `{incident_details}`
+8. Infer additional context from: `{outage_summary}`
+
+Return only the JSON array — no code fences.
 """)
     # Instantiate LLM
     llm = get_llm()
@@ -526,21 +517,28 @@ Return a JSON array with that single object, no code fences.
 
 def generate_well_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
     """
-    Generate 2–3 unique events for a WELL-UNDERSTOOD incident scenario, with 4–6 total events after repeats.
-    Each event’s custom_details must include "metric_name", "current_value", "threshold", and "service_name".
+    Generate a JSON **array** of events for a **WELL-UNDERSTOOD** incident at {organization}.
+    Every event object must include the top-level key `"event_action"` set to `"trigger"`, and in its `"payload"` include the keys `"summary"`, `"source"`, `"severity"`, and `"custom_details"`.
+
+    **Rules**
+    1. Use only these observability tools for `"source"`: {observability_tools}.
+    2. Create **2–3 unique alert objects** spanning 120 s (`timing_metadata.schedule_offset` 0–120).
+    3. Use severities `"info"` or `"warning"` only.
+    4. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` (for example one element with repeat_count=2 and repeat_offset=60) so the total events land **between 4 and 6**.
+    5. `payload.custom_details` MUST include `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` (value from {service_names}).
+
+    Return only the JSON array — no code fences.
     """
     well_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON **array** of events for a **WELL-UNDERSTOOD** incident at {organization}.
-Every event object must include the top-level key "event_action" set to "trigger", and in its "payload" include the keys "summary", "source", and "severity" appropriate for each alert.
+Every event object must include the top-level key `"event_action"` set to `"trigger"`, and in its `"payload"` include the keys `"summary"`, `"source"`, `"severity"`, and `"custom_details"`.
 
 **Rules**
 1. Use only these observability tools for `"source"`: {observability_tools}.
-2. Create **2–3 unique alert objects** spanning 120 s (`timing_metadata.schedule_offset` 0-120).
-3. Use severities "info" or "warning"—no critical/error in a P5 scenario.
-4. Each alert must be a realistic symptom that automation handled (e.g., "Cache-Hit-Ratio below threshold", "S3-Latency above 300 ms").
-5. Provide `"repeat_schedule"` so the total events land **between 4 and 6**.
-6. `payload.custom_details` MUST include  
-   `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` (value from {service_names}).
+2. Create **2–3 unique alert objects** spanning 120 s (`timing_metadata.schedule_offset` 0–120).
+3. Use severities `"info"` or `"warning"` only.
+    4. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` (for example, one element with repeat_count=2 and repeat_offset=60) so the total events land **between 4 and 6**.
+5. `payload.custom_details` MUST include `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` (value from {service_names}).
 
 Return only the JSON array — no code fences.
 """)
