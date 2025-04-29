@@ -1,0 +1,6 @@
+FROM alpine:latest
+RUN apk add --no-cache curl jq bash
+WORKDIR /app
+COPY . /app
+RUN chmod +x ./smoke_test.sh
+ENTRYPOINT ["/app/smoke_test.sh"]

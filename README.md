@@ -41,6 +41,14 @@ Frontend (React on 3000)  <-->  Backend (Express on 5002)  <-->  gen_service (Fl
    ```bash
    docker-compose up --build
    ```
+3. (Optional) Run smoke tests to validate end-to-end functionality:
+   ```bash
+   # To include the smoke service in 'up', enable the 'smoke' profile:
+   docker-compose --profile smoke up --build -d
+   # Or run the smoke test on demand (requires services to be running):
+   docker-compose run --rm smoke
+   ```
+4. Access the apps:
 3. Access the apps:
    - Frontend UI: http://localhost:3000
    - Backend API: http://localhost:5002

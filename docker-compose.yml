@@ -16,9 +16,11 @@ services:
       context: ./backend
     container_name: backend
     environment:
-      # OpenAI API key (passed through) and Python service URL override
+      # OpenAI API key (passed through) and Python service URLs override
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - PYTHON_SERVICE_URL=http://gen_service:5001/api/generate
+      - PYTHON_SOP_URL=http://gen_service:5001/api/generate_sop
+      - PYTHON_SOP_INLINE_URL=http://gen_service:5001/api/generate_sop_inline
     ports:
       - "5002:5002"
     depends_on:
@@ -36,3 +38,15 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+  # Smoke test service: runs smoke_test.sh after services are up
+  smoke:
+    profiles:
+      - smoke
+    build:
+      context: .
+      dockerfile: Dockerfile.smoke
+    container_name: smoke_test
+    depends_on:
+      - gen_service
+      - backend
+      - frontend
