@@ -28,7 +28,7 @@ Generate a runbook / SOP in **Markdown** (no code-block fences in the output) us
 * Flag which of the checks could be automated via PagerDuty Workflows or Process Automation.  
 ### Escalation  
 ### Communication  
-### Remediation  
+### Remediation 
 ### Verification   
 
 **Formatting & Content Rules**
@@ -37,14 +37,13 @@ Generate a runbook / SOP in **Markdown** (no code-block fences in the output) us
 * For **every bullet** in all sections, append `— **Manual:** <N min>; **Saved with Ops Cloud:** <N min>` to quantify current effort vs. time saved when the step is automated with PagerDuty Operations Cloud. Infer which steps could be automated using PagerDuty workflows and Rundeck.
 * Use **Escalation** to state clear SEV thresholds and the next team/rotation to page.  
 * In **Communication**, describe stakeholder updates (status page, Slack channel, exec briefing) and recommended cadence.  
-* Under **Remediation**, include a table with columns **Manual Step | Automatable Step | Tool / Script Suggestion** and propose concrete automation candidates (e.g., “Terraform rollback plan”, “Rundeck job”, “Kubernetes failover script”).  
+* Under **Remediation**, include a table with columns **Manual Step | Automatable Step | Tool / Script Suggestion** and propose concrete automation candidates (e.g., “Terraform rollback plan”, “Rundeck job”, “Kubernetes failover script”). 
+* Under **Remediation** Call out when a remediation job triggered by the original alert_payload could have prevented human escalation    
 * In **Verification**, outline how to confirm recovery with health‑checks or synthetic tests.    
-* Clearly mark automation opportunities whenever a manual step could be scripted. 
 * Ignore lines in the alert_payload that contain '{{ faker' when considering responses.
-* At the end of **each major section** (Triage, Escalation, Communication, Remediation, Verification) append two lines:  
-  `**Estimated manual time:** <N min>`  
-  `**Estimated time saved with PagerDuty Ops Cloud:** <N min>`  
-  Use the Ops‑Cloud figure to reflect how much faster the step would be if all feasible automations (Event‑Driven Automations, Rundeck jobs, Workflow Actions) were in place.
+
+### Operations Cloud Observations
+  Use the PagerDuty Operations Cloud functionality and automation to reflect how much faster the process would be if all feasible automations (Event-Driven Automations, Rundeck jobs, Workflow Actions) were in place.  Infer which steps could be automated using PagerDuty workflows and Rundeck.
   
 Return only the Markdown SOP text, no additional commentary.
 """)
@@ -75,36 +74,30 @@ You are provided an array of PagerDuty alert payloads:
 
 Generate a consolidated runbook / SOP in **Markdown** (no code-block fences in the output) using **exactly** these section headings and in this order:
 
-### Probable Origin - Excluse this bullet from the Formatting & Content Rules
-Use the provided alerts to infer which of the provided alerts to list the top 3 most likely "root cause" alerts and which service is the source, ordered by most likely and easiest to validate.
-
-### Next Steps  
-Based on the combined alerts, outline immediate corrective actions to take.
-
 ### Overview  
 ### Triage  
 * In **Triage**, list each check as **Command → Purpose → Validation**.  
   *Example: `traceroute api.example.com` → detect network hops → expect <50ms total; or `SELECT tablespace_name, pct_free FROM dba_free_space` → ensure >15% free.*  
-* Flag which of the checks could be automated via PagerDuty Workflows or Process Automation.  
+* Flag which of the checks could be automated via PagerDuty Workflows or Process Automation. 
+* List at least 4 unique triage actions that could be taken based on the alerts 
 ### Escalation  
 ### Communication  
-### Remediation  
+### Remediation
+* Call out when a remediation job triggered by an event could have prevented human escalation  
 ### Verification   
 
 **Formatting & Content Rules**
 
 * Start every bullet with an imperative verb (e.g., “Check…”, “Run…”, “Query…”).  
 * Ignore lines in the alert_payload that contain '{{ faker' when considering responses.
-* For **every bullet** in all sections, append `— **Manual:** <N min>; **Saved with Ops Cloud:** <N min>` to quantify current effort vs. time saved when the step is automated with PagerDuty Operations Cloud. Infer which steps could be automated using PagerDuty workflows and Rundeck.
+* For **every bullet** in all sections, append `— **Manual:** <N min>; **Saved with Ops Cloud:** <N min>` to quantify current effort vs. time saved when the step is automated with PagerDuty Operations Cloud.
 * Use **Escalation** to state clear SEV thresholds and the next team/rotation to page.  
 * In **Communication**, describe stakeholder updates (status page, Slack channel, exec briefing) and recommended cadence.  
 * Under **Remediation**, include a table with columns **Manual Step | Automatable Step | Tool / Script Suggestion** and propose concrete automation candidates (e.g., “Terraform rollback plan”, “Rundeck job”, “Kubernetes failover script”).  
 * In **Verification**, outline how to confirm recovery with health-checks or synthetic tests.    
-* Clearly mark automation opportunities whenever a manual step could be scripted.  
-* At the end of **each major section** (Probable Origin, Next Steps, Triage, Escalation, Communication, Remediation, Verification) append two lines:  
-  `**Estimated manual time:** <N min>`  
-  `**Estimated time saved with PagerDuty Ops Cloud:** <N min>`  
-  Use the Ops-Cloud figure to reflect how much faster the step would be if all feasible automations (Event-Driven Automations, Rundeck jobs, Workflow Actions) were in place.
+
+### Operations Cloud Observations
+  Use the PagerDuty Operations Cloud functionality and automation to reflect how much faster the process would be if all feasible automations (Event-Driven Automations, Rundeck jobs, Workflow Actions) were in place.  Infer which steps could be automated using PagerDuty workflows and Rundeck.
   
 Return only the Markdown SOP text, no additional commentary.
 """)
