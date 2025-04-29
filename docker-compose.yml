@@ -10,6 +10,9 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
       - "5001:5001"
+    volumes:
+      # Share generated files with backend container
+      - ./backend/generated_files:/backend/generated_files
 
   backend:
     build:
@@ -25,6 +28,9 @@ services:
       - "5002:5002"
     depends_on:
       - gen_service
+    volumes:
+      # Share generated files with gen_service container
+      - ./backend/generated_files:/app/generated_files
 
   frontend:
     build:
@@ -50,3 +56,6 @@ services:
       - gen_service
       - backend
       - frontend
+    volumes:
+      # Mount project to access generated files at runtime
+      - .:/app
