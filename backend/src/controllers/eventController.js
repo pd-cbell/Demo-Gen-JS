@@ -25,17 +25,17 @@ exports.streamEvents = async (req, res) => {
   const axios = require('axios');
   const PAGERDUTY_API_URL = 'https://events.pagerduty.com/v2/enqueue';
   const PAGERDUTY_CHANGE_URL = 'https://events.pagerduty.com/v2/change/enqueue';
+  // Initialize SSE headers before attempting to load events
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders && res.flushHeaders();
   try {
     const { organization, filename, routing_key } = req.query;
     // Load events
     const events = await eventService.loadEvents(organization, filename);
     // Compute schedule summary
     const schedule_summary = eventService.computeScheduleSummary(events);
-    // Set SSE response headers
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders && res.flushHeaders();
     // Send schedule summary as first event
     res.write(`event: schedule\n`);
     res.write(`data: ${JSON.stringify(schedule_summary)}\n\n`);

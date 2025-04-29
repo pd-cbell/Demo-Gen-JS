@@ -285,13 +285,14 @@ def generate_major_events(organization, api_key, itsm_tools, observability_tools
     """
     major_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON **array** of events for a **MAJOR** incident at {organization}.
+Every event object must include the top-level key "event_action" set to "trigger", and in its "payload" include the keys "summary", "source", and "severity" appropriate for each alert.
 
 **Rules**
 1. Use only these observability tools for `"source"`: {observability_tools}.
 2. Create **8–10 unique alert objects** spanning 420 s (`timing_metadata.schedule_offset` 0‑420).
 3. Mix severities: "warning", "critical", and "error" across the alerts.
 4. Every alert must be a believable symptom (e.g., "Payment‑API 5xx rate", "SIS‑DB connections").
-5. Provide `"repeat_schedule"` so the total events land **between 50 and 70**.
+5. Provide `"repeat_schedule"` as an **array of objects** (e.g., ` [{{"repeat_count": 6, "repeat_offset": 30}}] `), each with keys `"repeat_count"` and `"repeat_offset"`, so the total events land **between 50 and 70**.
 6. `payload.custom_details` MUST include  
    `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` and service_name must use a value from {service_names}.
 7. Include *one* special alert whose `custom_details` also contains `"major_failure": true`, '"CUJ Impacted": true' and a `schedule_offset` between 120s and 180s with a severity of Error.
@@ -355,7 +356,7 @@ Generate a JSON array of events for a PARTIALLY UNDERSTOOD incident scenario for
 Use only the provided observability tools as sources: {observability_tools}.
 Do not include events or sources from ITSM tools: {itsm_tools}.
 Generate 4 to 5 unique events over a period of 420 seconds starting from T0. 
-For each unique event, generate an event object with the following structure:
+For each unique event, generate an event object with the following structure (use "trigger" for event_action):
 {{
   "payload": {{
       "summary": "<string>",
@@ -366,7 +367,7 @@ For each unique event, generate an event object with the following structure:
       "class": "<string>",
       "custom_details": {{ "service_name": "<string>", "<additional_context>": "<value>", ... }}
   }},
-  "event_action": "<trigger or resolve>",
+  "event_action": "trigger",
   "timing_metadata": {{ "schedule_offset": <number> }},
   "repeat_schedule": [ {{ "repeat_count": <number>, "repeat_offset": <number> }} ]
 }}
@@ -530,6 +531,7 @@ def generate_well_events(organization, api_key, itsm_tools, observability_tools,
     """
     well_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON **array** of events for a **WELL-UNDERSTOOD** incident at {organization}.
+Every event object must include the top-level key "event_action" set to "trigger", and in its "payload" include the keys "summary", "source", and "severity" appropriate for each alert.
 
 **Rules**
 1. Use only these observability tools for `"source"`: {observability_tools}.

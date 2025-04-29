@@ -2,6 +2,11 @@ const axios = require('axios');
 // Template engine and faker support
 const _ = require('lodash');
 const { faker } = require('@faker-js/faker');
+// Ensure faker.datatype.uuid() alias for backward compatibility
+if (!faker.datatype || typeof faker.datatype.uuid !== 'function') {
+  faker.datatype = faker.datatype || {};
+  faker.datatype.uuid = (...args) => faker.string.uuid(...args);
+}
 // PagerDuty Events V2 API endpoint for incident events
 const PAGERDUTY_API_URL = "https://events.pagerduty.com/v2/enqueue";
 // PagerDuty Events V2 API endpoint for change events
@@ -25,30 +30,33 @@ exports.loadEvents = async (organization, filename) => {
   }
   // Extract JSON array string
   const jsonString = content.substring(start_index, end_index + 1);
-  // Template evaluation: support timestamp(offset) and faker helpers
-  const templateFn = _.template(jsonString, { interpolate: /{{([\s\S]+?)}}/g });
-  const context = {
-    /**
-     * timestamp helper: if one arg, fixed offset (seconds); if two args, random between offsets.
-     * Usage in template: {{ timestamp(minOffsetSeconds, maxOffsetSeconds) }}
-     */
-    timestamp: (minOffsetSeconds, maxOffsetSeconds) => {
-      const min = Number(minOffsetSeconds);
-      // single argument: fixed offset
-      if (maxOffsetSeconds === undefined) {
-        return new Date(Date.now() + min * 1000).toISOString();
-      }
-      const max = Number(maxOffsetSeconds);
-      // compute random offset between min and max (inclusive)
-      const lo = Math.min(min, max);
-      const hi = Math.max(min, max);
-      const randSec = Math.floor(Math.random() * (hi - lo + 1)) + lo;
-      return new Date(Date.now() + randSec * 1000).toISOString();
-    },
-    faker,
+  // Template evaluation: replace {{expr}} placeholders by evaluating expr with timestamp and faker
+  // Helper for timestamp: fixed or random offset (seconds) from now
+  const contextTimestamp = (minOffsetSeconds, maxOffsetSeconds) => {
+    const min = Number(minOffsetSeconds);
+    if (maxOffsetSeconds === undefined) {
+      return new Date(Date.now() + min * 1000).toISOString();
+    }
+    const max = Number(maxOffsetSeconds);
+    const lo = Math.min(min, max);
+    const hi = Math.max(min, max);
+    const randSec = Math.floor(Math.random() * (hi - lo + 1)) + lo;
+    return new Date(Date.now() + randSec * 1000).toISOString();
   };
-  const templated = templateFn(context);
-  return JSON.parse(templated);
+  // Sanitize cluster_name placeholder: remove escaped quotes around -cluster
+  const sanitizedJson = jsonString.replace(/\\"-cluster\\"/g, "'-cluster'");
+  // Perform placeholder replacements on sanitized JSON string
+  const replaced = sanitizedJson.replace(/{{\s*([\s\S]+?)\s*}}/g, (match, expr) => {
+    try {
+      // Evaluate the expression with timestamp and faker in scope
+      const value = new Function('timestamp', 'faker', `return ${expr}`)(contextTimestamp, faker);
+      return value;
+    } catch (err) {
+      console.error(`Error evaluating expression "${expr}": ${err}`);
+      return '';
+    }
+  });
+  return JSON.parse(replaced);
 };
  
 /**
@@ -60,10 +68,18 @@ exports.computeScheduleSummary = (events) => {
     const summary = ev.payload?.summary || '';
     const timing = ev.timing_metadata || {};
     const initial_offset = timing.schedule_offset || 0;
-    const repeats = ev.repeat_schedule || [];
-    const total_repeats = repeats.reduce((acc, r) => acc + (r.repeat_count || 0), 0);
+    // Normalize repeat_schedule: support array or numeric
+    let repeats = ev.repeat_schedule;
+    let total_repeats = 0;
+    let next_offset = null;
+    if (Array.isArray(repeats)) {
+      total_repeats = repeats.reduce((acc, r) => acc + ((r && r.repeat_count) || 0), 0);
+      next_offset = repeats.length > 0 ? repeats[0].repeat_offset || 0 : null;
+    } else if (typeof repeats === 'number') {
+      total_repeats = repeats;
+      next_offset = null;
+    }
     const total_sends = 1 + total_repeats;
-    const next_offset = repeats.length > 0 ? repeats[0].repeat_offset || 0 : null;
     return { summary, initial_offset, total_repeats, total_sends, next_offset };
   });
 };
