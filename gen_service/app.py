@@ -5,6 +5,7 @@ from sop_generator import generate_sop, generate_sop_blended
 import os
 import datetime
 import utils
+from generators.custom_generator import generate_custom
 
 app = Flask(__name__)
 # Store generated files in the backend service directory so they are shared
@@ -55,7 +56,8 @@ def index():
             # Generate incident events and change events
             events = utils.generate_major_events(
                 org_name, api_key, itsm_tools, observability_tools,
-                outage_summary, service_names, incident_details
+                outage_summary, service_names, incident_details,
+                data.get('unique_alerts'), data.get('max_events')
             )
             change_events = utils.generate_major_change_events(
                 org_name, api_key, itsm_tools, observability_tools,
@@ -72,7 +74,8 @@ def index():
             # Generate incident events and one change event representing the root cause
             events = utils.generate_partial_events(
                 org_name, api_key, itsm_tools, observability_tools,
-                outage_summary, service_names, incident_details
+                outage_summary, service_names, incident_details,
+                data.get('unique_alerts'), data.get('max_events')
             )
             change_events = utils.generate_partial_change_events(
                 org_name, api_key, itsm_tools, observability_tools,
@@ -89,7 +92,8 @@ def index():
             # Generate incident events
             events = utils.generate_well_events(
                 org_name, api_key, itsm_tools, observability_tools,
-                outage_summary, service_names, incident_details
+                outage_summary, service_names, incident_details,
+                data.get('unique_alerts'), data.get('max_events')
             )
             # Generate change event for automated remediation
             change_events = utils.generate_well_change_events(
@@ -215,6 +219,10 @@ def api_generate():
     if not api_key:
         return {"message": "Server misconfiguration: missing API key."}, 500
 
+    # Extract advanced overrides
+    symptom = data.get('symptom')
+    root_cause = data.get('root_cause')
+    max_events = data.get('max_events')
     # Ensure output directory exists
     org_folder = os.path.join(app.config['GENERATED_FOLDER'], sanitize_org(org_name))
     os.makedirs(org_folder, exist_ok=True)
@@ -242,7 +250,8 @@ def api_generate():
         # Generate narrative (structured JSON) and events
         if scenario == 'major':
             structured = utils.generate_major(
-                org_name, api_key, itsm_tools, observability_tools, service_names
+                org_name, api_key, itsm_tools, observability_tools, service_names,
+                symptom, root_cause
             )
             narrative = structured['narrative']
             outage_summary = structured['outage_summary']
@@ -259,7 +268,8 @@ def api_generate():
         elif scenario == 'partial':
             # Generate structured narrative and root-cause change event for partial scenario
             structured = utils.generate_partial(
-                org_name, api_key, itsm_tools, observability_tools, service_names
+                org_name, api_key, itsm_tools, observability_tools, service_names,
+                symptom, root_cause
             )
             narrative = structured['narrative']
             outage_summary = structured['outage_summary']
@@ -277,7 +287,8 @@ def api_generate():
         elif scenario == 'well':
             # Generate structured narrative, events, and change event for well-understood scenario
             structured = utils.generate_well(
-                org_name, api_key, itsm_tools, observability_tools, service_names
+                org_name, api_key, itsm_tools, observability_tools, service_names,
+                symptom, root_cause
             )
             narrative = structured['narrative']
             outage_summary = structured['outage_summary']
@@ -292,7 +303,25 @@ def api_generate():
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details
             )
+        elif scenario == 'custom':
+            # Generate structured narrative based on custom overrides
+            # symptom and blast_radius may be provided in request body
+            symptom = data.get('symptom')
+            blast_radius = data.get('blast_radius')
+            structured = generate_custom(
+                org_name, api_key, itsm_tools, observability_tools,
+                service_names, symptom, blast_radius
+            )
+            narrative = structured.get('narrative')
+            outage_summary = structured.get('outage_summary')
+            incident_details = structured.get('incident_details')
+            # Generate events using major scenario template as fallback
+            events = utils.generate_major_events(
+                org_name, api_key, itsm_tools, observability_tools,
+                outage_summary, service_names, incident_details
+            )
         else:
+            # Unknown scenario; skip
             continue
 
         # Save narrative file
@@ -329,6 +358,57 @@ def api_generate():
     if change_events_map:
         result["change_events"] = change_events_map
     return result, 200
+    
+@app.route('/generate/custom', methods=['POST'])
+def api_generate_custom():
+    """
+    Generate a custom scenario narrative based on provided overrides.
+    Expects JSON body with:
+      - org_name: string
+      - itsm_tools: optional string
+      - observability_tools: optional string
+      - service_names: optional string
+      - symptom: optional string override
+      - blast_radius: optional string override
+    Returns a JSON object with the generated filename.
+    """
+    data = request.get_json() or {}
+    org_name = data.get('org_name')
+    if not org_name:
+        return {"message": "Organization name is required."}, 400
+    itsm_tools = data.get('itsm_tools')
+    observability_tools = data.get('observability_tools')
+    service_names = data.get('service_names')
+    symptom = data.get('symptom')
+    blast_radius = data.get('blast_radius')
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return {"message": "Server misconfiguration: missing API key."}, 500
+    try:
+        structured = generate_custom(
+            org_name,
+            api_key,
+            itsm_tools,
+            observability_tools,
+            service_names,
+            symptom,
+            blast_radius
+        )
+    except Exception as e:
+        app.logger.error(f"Error generating custom scenario: {e}")
+        return {"message": "Error generating custom scenario."}, 500
+    narrative = structured.get('narrative')
+    if not narrative:
+        return {"message": "No narrative returned from generator."}, 500
+    # Save narrative to a file
+    org_folder = os.path.join(app.config['GENERATED_FOLDER'], sanitize_org(org_name))
+    os.makedirs(org_folder, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = f"custom_{timestamp}.txt"
+    filepath = os.path.join(org_folder, filename)
+    with open(filepath, 'w') as f:
+        f.write(narrative)
+    return {"filename": filename}, 200
 
 @app.route('/preview/<org>/<filename>/postman', methods=['GET'])
 def export_postman(org, filename):

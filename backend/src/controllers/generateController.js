@@ -21,15 +21,8 @@ exports.handleGenerate = async (req, res) => {
       return res.status(400).json({ message: 'At least one scenario must be selected.' });
     }
 
-    // Build the payload to send to the Python service
-    // Build the payload to send to the Python service (no API key; Flask reads from env)
-    const payload = {
-      org_name,
-      scenarios,
-      itsm_tools,
-      observability_tools,
-      service_names,
-    };
+    // Forward all request body parameters to the Python generation service, including overrides for custom scenarios
+    const payload = req.body;
 
     // Python Flask service URL (can override via env var PYTHON_SERVICE_URL)
     const pythonServiceURL = process.env.PYTHON_SERVICE_URL || "http://localhost:5001/api/generate";

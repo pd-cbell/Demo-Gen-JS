@@ -14,7 +14,12 @@ function Dashboard() {
     itsm_tools: '',
     observability_tools: '',
     service_names: '',
+    symptom: '',
+    root_cause: '',
+    unique_alerts: 5,
+    max_events: 50,
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // API key is now read by the server from its environment variable
   const [generationResult, setGenerationResult] = useState('');
@@ -45,10 +50,30 @@ function Dashboard() {
       .filter(([_, isSelected]) => isSelected)
       .map(([scenarioName]) => scenarioName);
 
+    // Build payload: include custom fields only when populated
     const payload = {
-      ...formData,
+      org_name: formData.org_name,
+      itsm_tools: formData.itsm_tools,
+      observability_tools: formData.observability_tools,
+      service_names: formData.service_names,
       scenarios: selectedScenarios,
     };
+    // Apply advanced overrides if enabled
+    if (showAdvanced) {
+      // Additional overrides
+      if (formData.symptom) {
+        payload.symptom = formData.symptom;
+      }
+      if (formData.root_cause) {
+        payload.root_cause = formData.root_cause;
+      }
+      if (formData.unique_alerts) {
+        payload.unique_alerts = formData.unique_alerts;
+      }
+      if (formData.max_events) {
+        payload.max_events = formData.max_events;
+      }
+    }
     // Initialize progress steps UI
     const steps = [];
     selectedScenarios.forEach((scenario) => {
@@ -173,6 +198,7 @@ function Dashboard() {
                 onChange={handleInputChange}
               />
             </div>
+            {/* Base Service Names input */}
             <div className="mb-3">
               <label htmlFor="service_names" className="form-label">
                 Service Name(s) <span style={{ color: 'red' }}>*</span>
@@ -187,6 +213,79 @@ function Dashboard() {
                 required
               />
             </div>
+            {/* Advanced Options Toggle */}
+            <div className="mb-3">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+              </button>
+            </div>
+            {/* Advanced Override Fields */}
+            {showAdvanced && (
+              <>
+                <div className="mb-3">
+                  <label htmlFor="symptom" className="form-label">
+                    Symptom Override
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="symptom"
+                    name="symptom"
+                    value={formData.symptom}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="root_cause" className="form-label">
+                    Root Cause Override
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="root_cause"
+                    name="root_cause"
+                    value={formData.root_cause}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="unique_alerts" className="form-label">
+                    Unique Alerts: {formData.unique_alerts}
+                  </label>
+                  <input
+                    type="range"
+                    className="form-range"
+                    id="unique_alerts"
+                    name="unique_alerts"
+                    min="1"
+                    max="10"
+                    step="1"
+                    value={formData.unique_alerts}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="max_events" className="form-label">
+                    Max Events: {formData.max_events}
+                  </label>
+                  <input
+                    type="range"
+                    className="form-range"
+                    id="max_events"
+                    name="max_events"
+                    min="10"
+                    max="200"
+                    step="10"
+                    value={formData.max_events}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </>
+            )}
             <button
               type="submit"
               className="btn btn-primary w-100"

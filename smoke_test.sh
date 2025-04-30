@@ -12,14 +12,8 @@ for cmd in curl jq; do
   fi
 done
 
-DEFAULT_URL="http://localhost:5002"
-CONTAINER_URL="http://backend:5002"
-# Determine which URL to use for backend API (localhost vs Docker network alias)
-BASE_URL="$DEFAULT_URL"
-if ! curl -s --connect-timeout 1 "$BASE_URL/" >/dev/null 2>&1; then
-  echo "Could not reach $BASE_URL; falling back to $CONTAINER_URL"
-  BASE_URL="$CONTAINER_URL"
-fi
+# Backend API URL (assumes local Docker port mapping or direct host run)
+BASE_URL="http://localhost:5002"
 echo "Using backend URL: $BASE_URL"
 ORG="SmokeOrg"
 SCENARIO_PAYLOAD=$(cat <<EOF
@@ -44,11 +38,12 @@ for i in {1..10}; do
   sleep 2
 done
 echo
-echo "[1/4] Testing /api/generate"
-HTTP=$(curl -s -o /tmp/smoke_gen.json -w "%{http_code}" \
+echo "[1/5] Testing /api/generate"
+HTTP=$(curl -s --connect-timeout 5 --max-time 300 -o /tmp/smoke_gen.json -w "%{http_code}" \
   -X POST "$BASE_URL/api/generate" \
   -H "Content-Type: application/json" \
-  -d "$SCENARIO_PAYLOAD")
+  -d "$SCENARIO_PAYLOAD" \
+  || echo "000")
 if [ "$HTTP" -ne 200 ]; then
   echo "FAIL: /api/generate returned HTTP $HTTP" >&2
   exit 1
@@ -62,7 +57,7 @@ for key in message scenarios narratives events change_events; do
   fi
 done
 
-echo "[2/4] Validating Major narrative and events"
+echo "[2/5] Validating Major narrative and events"
 # Check narrative
 NARRATIVE=$(jq -r '.narratives.major' /tmp/smoke_gen.json)
 if [[ "$NARRATIVE" != *"Outage Summary"* ]] || [[ "$NARRATIVE" != *"Incident Narrative"* ]]; then
@@ -81,12 +76,13 @@ if ! jq -e 'type=="array" and length>0' <<<"$EVENTS_JSON" >/dev/null; then
   exit 1
 fi
 
-echo "[3/4] Testing inline SOP generation (/api/generate_sop/inline)"
+echo "[3/5] Testing inline SOP generation (/api/generate_sop/inline)"
 # Use inline SOP endpoint with events array
-HTTP=$(curl -s -o /tmp/smoke_sop.json -w "%{http_code}" \
+HTTP=$(curl -s --connect-timeout 5 --max-time 300 -o /tmp/smoke_sop.json -w "%{http_code}" \
   -X POST "$BASE_URL/api/generate_sop/inline" \
   -H "Content-Type: application/json" \
-  -d "{ \"events\": $EVENTS_JSON }")
+  -d "{ \"events\": $EVENTS_JSON }" \
+  || echo "000")
 if [ "$HTTP" -ne 200 ]; then
   echo "FAIL: /api/generate_sop/inline returned HTTP $HTTP" >&2
   exit 1
@@ -105,7 +101,7 @@ for heading in "### Overview" "### Triage" "### Escalation" "### Communication" 
   fi
 done
 
-echo "[4/4] Testing event send (/api/events/send)"
+echo "[4/5] Testing event send (/api/events/send)"
 # List files to find the events file
 FILES=$(curl -s "$BASE_URL/api/files/$ORG" | jq -r '.files[]')
 EVENT_FILE=$(grep '_events_.*\.json' <<<"$FILES" | grep -v change | head -n1)
@@ -113,10 +109,11 @@ if [ -z "$EVENT_FILE" ]; then
   echo "FAIL: no events file found for organization $ORG" >&2
   exit 1
 fi
-HTTP=$(curl -s -o /tmp/smoke_send.json -w "%{http_code}" \
+HTTP=$(curl -s --connect-timeout 5 -o /tmp/smoke_send.json -w "%{http_code}" \
   -X POST "$BASE_URL/api/events/send" \
   -H "Content-Type: application/json" \
-  -d "{ \"organization\": \"$ORG\", \"filename\": \"$EVENT_FILE\", \"routing_key\": \"TEST_KEY\" }")
+  -d "{ \"organization\": \"$ORG\", \"filename\": \"$EVENT_FILE\", \"routing_key\": \"TEST_KEY\" }" \
+  || echo "000")
 if [ "$HTTP" -ne 200 ]; then
   echo "FAIL: /api/events/send returned HTTP $HTTP" >&2
   exit 1
@@ -131,5 +128,37 @@ if ! jq -e '.results | type == "array" and length > 0' /tmp/smoke_send.json >/de
   exit 1
 fi
 
-echo "SMOKE TEST PASSED"
-exit 0
+  # [5/5] Testing advanced overrides via /api/generate
+  echo "[5/5] Testing advanced overrides via /api/generate"
+  # Build advanced override payload
+  ADV_PAYLOAD=$(cat <<EOF
+{
+  "org_name": "$ORG",
+  "scenarios": ["major"],
+  "itsm_tools": "ServiceNOW",
+  "observability_tools": "NewRelic",
+  "service_names": "Auth,Payments",
+  "symptom": "Kafka lag",
+  "root_cause": "Broker misconfiguration",
+  "max_events": 20
+}
+EOF
+  )
+  # Call backend generate endpoint with overrides
+  HTTP=$(curl -s --connect-timeout 5 --max-time 300 -o /tmp/smoke_adv.json -w "%{http_code}" \
+    -X POST "$BASE_URL/api/generate" \
+    -H "Content-Type: application/json" \
+    -d "$ADV_PAYLOAD" \
+    || echo "000")
+  if [ "$HTTP" -ne 200 ]; then
+    echo "FAIL: /api/generate with advanced overrides returned HTTP $HTTP" >&2
+    exit 1
+  fi
+  # Validate that major narrative exists in response
+  if ! jq -e '.narratives.major' /tmp/smoke_adv.json >/dev/null; then
+    echo "FAIL: narratives.major missing in advanced override response" >&2
+    exit 1
+  fi
+
+  echo "SMOKE TEST PASSED"
+  exit 0

@@ -113,15 +113,28 @@ def run_chain_with_retry(chain, inputs, max_attempts=3):
 # INCIDENT NARRATIVE FUNCTIONS
 #########################
 
-def generate_major(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk", service_names="User Authentication, API Nodes, Payment Processing"):
+def generate_major(
+    organization,
+    api_key,
+    itsm_tools="ServiceNOW",
+    observability_tools="NewRelic, Splunk",
+    service_names="User Authentication, API Nodes, Payment Processing",
+    symptom=None,
+    root_cause=None
+):
     """
     Generate a **MAJOR** (P1) incident narrative that infers industry & systems from the organization name and avoids generic service labels.
     """
+    # Prepare override inputs with defaults
+    symptom_input = symptom or "Infer a primary symptom based on the narrative context"
+    root_cause_input = root_cause or "Infer the root cause logically from the incident details"
     major_incident_template = ChatPromptTemplate.from_template("""
-You are a Site‑Reliability Storyteller.
+You are a Site-Reliability Storyteller.
 
 **Inputs**
 - organization: {organization}
+- symptom: {symptom_input}
+- root_cause: {root_cause_input}
 - industry: Infer from the organization name
 - core_systems: Infer typical critical systems for that industry and based on {service_names}
 - itsm_tools: {itsm_tools}
@@ -129,7 +142,7 @@ You are a Site‑Reliability Storyteller.
 
 **Task**
 Write a P1 **major** incident in **Markdown** with the exact bold headings below.  
-❗️Do **NOT** use generic placeholders like “Service A/B”. Use system names that would plausibly exist in the inferred industry (e.g., “Banner‑SIS‑DBWriter”, “Canvas‑Edge‑API”).
+❗️Do **NOT** use generic placeholders like “Service A/B”. Use system names that would plausibly exist in the inferred industry (e.g., “Banner-SIS-DBWriter”, “Canvas-Edge-API”).
 
 **Format (keep headings verbatim)**  
 **Scenario Overview:** 1–2 short paragraphs on impact and urgency.  
@@ -152,6 +165,8 @@ Do **NOT** wrap the JSON in code fences.
     chain = LLMChain(llm=llm, prompt=major_incident_template, verbose=True)
     raw = chain.run(
         organization=organization,
+        symptom_input=symptom_input,
+        root_cause_input=root_cause_input,
         itsm_tools=itsm_tools,
         observability_tools=observability_tools,
         service_names=service_names
@@ -165,18 +180,31 @@ Do **NOT** wrap the JSON in code fences.
         raise
     return data
 
-def generate_partial(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk", service_names="API Nodes, Database"):
+def generate_partial(
+    organization,
+    api_key,
+    itsm_tools="ServiceNOW",
+    observability_tools="NewRelic, Splunk",
+    service_names="API Nodes, Database",
+    symptom=None,
+    root_cause=None
+):
     """
     Generate a PARTIALLY UNDERSTOOD incident narrative.
     This scenario is less severe and includes a partial outage summary.
     """
     # Instruct the model to return a JSON object with narrative, outage_summary, and incident_details
     # Instruct the model to return a structured partial-incident narrative with clear sections
+    # Prepare override inputs with defaults
+    symptom_input = symptom or "Infer a primary symptom based on the narrative context"
+    root_cause_input = root_cause or "Infer the root cause logically from the incident details"
     partial_incident_template = ChatPromptTemplate.from_template("""
 You are a Site-Reliability Storyteller.
 
 **Inputs**
 - organization: {organization}
+- symptom: {symptom_input}
+- root_cause: {root_cause_input}
 - industry: Infer based on the organization name  # e.g. "Higher-Education"
 - core_systems: Infer based on the realistic systems for industry and {service_names}  # e.g. "Banner SIS, Canvas LMS, Husky Card Gateway"
 - itsm_tools: {itsm_tools}      # keep as-is
@@ -207,6 +235,8 @@ Do **NOT** wrap the JSON in code fences.
     chain = LLMChain(llm=llm, prompt=partial_incident_template, verbose=True)
     raw = chain.run(
         organization=organization,
+        symptom_input=symptom_input,
+        root_cause_input=root_cause_input,
         itsm_tools=itsm_tools,
         observability_tools=observability_tools,
         service_names=service_names
@@ -220,17 +250,30 @@ Do **NOT** wrap the JSON in code fences.
         raise
     return data
 
-def generate_well(organization, api_key, itsm_tools="ServiceNOW", observability_tools="NewRelic, Splunk", service_names="Storage"):
+def generate_well(
+    organization,
+    api_key,
+    itsm_tools="ServiceNOW",
+    observability_tools="NewRelic, Splunk",
+    service_names="Storage",
+    symptom=None,
+    root_cause=None
+):
     """
     Generate a **WELL-UNDERSTOOD** (P5) incident narrative that infers industry & realistic systems from the organization name and avoids generic placeholders.
     The incident resolves automatically via automation.
     """
     # Instruct the model to return a structured well-understood narrative with clear sections
+    # Prepare override inputs with defaults
+    symptom_input = symptom or "Infer a primary symptom based on the narrative context"
+    root_cause_input = root_cause or "Infer the root cause logically from the incident details"
     well_incident_template = ChatPromptTemplate.from_template("""
 You are a Site-Reliability Storyteller.
 
 **Inputs**
 - organization: {organization}
+- symptom: {symptom_input}
+- root_cause: {root_cause_input}
 - industry: Infer from the organization name
 - core_systems: Infer typical systems for the industry and {service_names}
 - itsm_tools: {itsm_tools}
@@ -261,6 +304,8 @@ Do **NOT** wrap the JSON in code fences.
     chain = LLMChain(llm=llm, prompt=well_incident_template, verbose=True)
     raw = chain.run(
         organization=organization,
+        symptom_input=symptom_input,
+        root_cause_input=root_cause_input,
         itsm_tools=itsm_tools,
         observability_tools=observability_tools,
         service_names=service_names
@@ -278,25 +323,44 @@ Do **NOT** wrap the JSON in code fences.
 # EVENT GENERATION FUNCTIONS
 #########################
 
-def generate_major_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
+def generate_major_events(
+    organization,
+    api_key,
+    itsm_tools,
+    observability_tools,
+    outage_summary,
+    service_names,
+    incident_details,
+    unique_alerts=None,
+    max_events=None
+):
     """
     Generate **8–10 unique events** for a MAJOR incident scenario, with a total event count between **50 and 70**.
     Each event’s custom_details must include "metric_name", "current_value", "threshold", and "service_name".
     """
+    # Prepare override inputs with defaults
+    unique_alerts_input = unique_alerts or "8-10"
+    max_events_input = max_events or "50-70"
     major_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON **array** of events for a **MAJOR** incident at {organization}.
-Every event object must include the top-level key "event_action" set to "trigger", and in its "payload" include the keys "summary", "source", and "severity" appropriate for each alert.
+Every event object must include the top-level key `"event_action"` set to `"trigger"`, and in its `"payload"` include the keys `"summary"`, `"source"`, and `"severity"` appropriate for each alert.
 
+**Inputs**
+- unique_alerts: {unique_alerts_input}
+- max_events: {max_events_input}
+- observability_tools: {observability_tools}
+- service_names: {service_names}
+- outage_summary: {outage_summary}
+- incident_details: {incident_details}
 **Rules**
 1. Use only these observability tools for `"source"`: {observability_tools}.
-2. Create **8–10 unique alert objects** spanning 420 s (`timing_metadata.schedule_offset` 0‑420).
-3. Mix severities: "warning", "critical", and "error" across the alerts.
-4. Every alert must be a believable symptom (e.g., "Payment‑API 5xx rate", "SIS‑DB connections"). Do not use the actual examples.
-5. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` (for example one element with repeat_count=6 and repeat_offset=30) so the total events land **between 50 and 70**.
-6. `payload.custom_details` MUST include  
-   `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` and service_name must use a value from {service_names}.
-7. Include *one* **MAJOR** alert whose `custom_details` also contains `"major_failure": true`, '"CUJ Impacted": true' and a `schedule_offset` between 120s and 180s with a severity of Error that would systematically trigger a major incident.
-8. The '"summary"' most not include {organization} in the content.
+2. Create **{unique_alerts_input} unique alert objects** spanning 420 s (`timing_metadata.schedule_offset` 0-420).
+3. Mix severities: `"warning"`, `"critical"`, and `"error"` across the alerts.
+4. Every alert must be a believable symptom (e.g., "Payment-API 5xx rate", "SIS-DB connections"). Do not use the actual examples.
+5. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` so the total events land **between {max_events_input}**.
+6. `payload.custom_details` MUST include `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` (value from {service_names}).
+7. Include one **MAJOR** alert whose `custom_details` also contains `"major_failure": true` and `"CUJ Impacted": true`, with a `schedule_offset` between 120s and 180s and severity `Error` to trigger a major incident.
+8. Do not include the organization name in any `summary` field.
 
 Return only the JSON array — no code fences.
 """)
@@ -305,10 +369,12 @@ Return only the JSON array — no code fences.
     chain = LLMChain(llm=llm, prompt=major_events_template, verbose=True)
     inputs = {
         "organization": organization,
+        "unique_alerts_input": unique_alerts_input,
+        "max_events_input": max_events_input,
         "itsm_tools": itsm_tools,
         "observability_tools": observability_tools,
-        "outage_summary": outage_summary,
         "service_names": service_names,
+        "outage_summary": outage_summary,
         "incident_details": incident_details
     }
     # Generate raw JSON array string (may include placeholder tokens)
@@ -340,7 +406,17 @@ Return only the JSON array — no code fences.
     # Return the augmented JSON with placeholders intact
     return json.dumps(events, indent=2)
 
-def generate_partial_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
+def generate_partial_events(
+    organization,
+    api_key,
+    itsm_tools,
+    observability_tools,
+    outage_summary,
+    service_names,
+    incident_details,
+    unique_alerts=None,
+    max_events=None
+):
     """
     Generate a JSON array of demo events for a PARTIALLY UNDERSTOOD incident scenario.
     
@@ -352,33 +428,49 @@ def generate_partial_events(organization, api_key, itsm_tools, observability_too
     Do not include explicit timestamp values.
     Output a properly formatted JSON array.
     """
+    # Prepare override inputs with defaults
+    unique_alerts_input = unique_alerts or "4-5"
+    max_events_input = max_events or "50-70"
     partial_events_template = ChatPromptTemplate.from_template("""
-Generate a JSON **array** of events for a **PARTIALLY UNDERSTOOD** incident scenario at {organization}.
+Generate a JSON **array** of events for a **PARTIALLY UNDERSTOOD** incident at {organization}.
+    # Prepare override inputs with defaults
+    unique_alerts_input = unique_alerts or "4-5"
+    max_events_input = max_events or "50-70"
+Generate a JSON **array** of events for a **PARTIALLY UNDERSTOOD** incident at {organization}.
+
+**Inputs**
+- unique_alerts: {unique_alerts_input}
+- max_events: {max_events_input}
+- service_names: {service_names}
+- incident_details: {incident_details}
+- outage_summary: {outage_summary}
 Every event object must include the top-level key `"event_action"` set to `"trigger"`, and in its `"payload"` include the keys `"summary"`, `"severity"`, `"source"`, `"component"`, `"group"`, `"class"`, and `"custom_details"`.
 
 **Rules**
 1. Use only these observability tools for `"source"`: {observability_tools}.
-2. Create **4–5 unique alert objects** spanning 420 s (`timing_metadata.schedule_offset` 0–420).
+2. Create **{unique_alerts_input} unique alert objects** spanning 420 s (`timing_metadata.schedule_offset` 0–420).
 3. Each event must have `"severity"` set to `"warning" or "critical"`.
-4. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` (for example, one element with repeat_count=6 and repeat_offset=30) so the total events land **between 50 and 70**.
+4. Provide `"repeat_schedule"` as an **array of objects** each with integer fields `repeat_count` and `repeat_offset` so the total events land **between {max_events_input}**.
 5. `payload.custom_details` MUST include  
    `"metric_name"`, `"current_value"`, `"threshold"`, and `"service_name"` and service_name must use a value from {service_names}.
 6. Do not reference the customer name `{organization}` and the services `{service_names}` in the summary.
 7. Infer realistic alert information from Incident Details: `{incident_details}`
 8. Infer additional context from: `{outage_summary}`
-
 Return only the JSON array — no code fences.
 """)
+
     # Instantiate LLM
     llm = get_llm()
     chain = LLMChain(llm=llm, prompt=partial_events_template, verbose=True)
     inputs = {
         "organization": organization,
+        "unique_alerts_input": unique_alerts_input,
+        "max_events_input": max_events_input,
         "itsm_tools": itsm_tools,
         "observability_tools": observability_tools,
-        "outage_summary": outage_summary,
         "service_names": service_names,
-        "incident_details": incident_details
+        "incident_details": incident_details,
+        "outage_summary": outage_summary
     }
     # Generate raw JSON array string (may include placeholder tokens)
     raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()
@@ -515,7 +607,17 @@ Return a JSON array with that single object, no code fences.
         ev_payload['custom_details'] = cd
     return json.dumps(change_events, indent=2)
 
-def generate_well_events(organization, api_key, itsm_tools, observability_tools, outage_summary, service_names, incident_details):
+def generate_well_events(
+    organization,
+    api_key,
+    itsm_tools,
+    observability_tools,
+    outage_summary,
+    service_names,
+    incident_details,
+    unique_alerts=None,
+    max_events=None
+):
     """
     Generate a JSON **array** of events for a **WELL-UNDERSTOOD** incident at {organization}.
     Every event object must include the top-level key `"event_action"` set to `"trigger"`, and in its `"payload"` include the keys `"summary"`, `"source"`, `"severity"`, and `"custom_details"`.
@@ -529,6 +631,9 @@ def generate_well_events(organization, api_key, itsm_tools, observability_tools,
 
     Return only the JSON array — no code fences.
     """
+    # Override inputs with defaults
+    unique_alerts_input = unique_alerts or "2-3"
+    max_events_input = max_events or "4-6"
     well_events_template = ChatPromptTemplate.from_template("""
 Generate a JSON **array** of events for a **WELL-UNDERSTOOD** incident at {organization}.
 Every event object must include the top-level key `"event_action"` set to `"trigger"`, and in its `"payload"` include the keys `"summary"`, `"source"`, `"severity"`, and `"custom_details"`.
@@ -547,11 +652,13 @@ Return only the JSON array — no code fences.
     chain = LLMChain(llm=llm, prompt=well_events_template, verbose=True)
     inputs = {
         "organization": organization,
+        "unique_alerts_input": unique_alerts_input,
+        "max_events_input": max_events_input,
         "itsm_tools": itsm_tools,
         "observability_tools": observability_tools,
-        "outage_summary": outage_summary,
         "service_names": service_names,
-        "incident_details": incident_details
+        "incident_details": incident_details,
+        "outage_summary": outage_summary
     }
     # Generate raw JSON array string (may include placeholder tokens)
     raw = run_chain_with_retry(chain, inputs, max_attempts=3).strip()

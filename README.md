@@ -66,6 +66,7 @@ This Flask microservice provides:
 It listens by default on port 5001 and exposes:
   - `POST /api/generate` for narrative and event JSON generation
   - `GET /event_sender` for the Event Sender UI (legacy)
+  - `POST /generate/custom` for generating a custom incident narrative with optional overrides.
 
 ```bash
 cd gen_service
@@ -78,6 +79,41 @@ export NODE_EVENTS_URL="http://127.0.0.1:5002/api/events"
 # Start the Flask app on port 5001
 flask run --host=127.0.0.1 --port=5001
 ```
+
+### Custom Scenario Generation
+
+Generate a tailored custom incident narrative via the gen_service endpoint.
+
+**Endpoint**
+```
+POST /generate/custom
+```
+
+**Request Body (JSON)**
+- `org_name` (string, required): Organization name.
+- `itsm_tools` (string, optional): ITSM tools to reference.
+- `observability_tools` (string, optional): Observability tools to reference.
+- `service_names` (string, optional): Comma-separated core services.
+- `symptom` (string, optional): Primary symptom description.
+- `blast_radius` (string, optional): Scope or impact description.
+
+**Response**
+```json
+{ "filename": "custom_<timestamp>.txt" }
+```
+
+**Example**
+```bash
+curl -X POST http://localhost:5001/generate/custom \
+  -H "Content-Type: application/json" \
+  -d '{
+    "org_name": "AcmeCorp",
+    "symptom": "Kafka lag",
+    "blast_radius": "Payment API and Auth services"
+  }'
+```
+
+The generated narrative file will be saved under `backend/generated_files/<org>/`.
 
 ### Backend (Express)
 ```bash
