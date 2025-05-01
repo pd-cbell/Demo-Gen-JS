@@ -43,7 +43,11 @@ exports.streamEvents = async (req, res) => {
     const sendTasks = [];
     for (const ev of events) {
       const isChange = ev.hasOwnProperty('routing_key') || ev.hasOwnProperty('links');
-      const scheduleOffsetMs = ((ev.timing_metadata?.schedule_offset) || 0) * 1000;
+      // Determine schedule offset (supports both nested payload and top-level timing_metadata)
+      const scheduleOffsetSec = ev.payload?.timing_metadata?.schedule_offset
+        ?? ev.timing_metadata?.schedule_offset
+        ?? 0;
+      const scheduleOffsetMs = scheduleOffsetSec * 1000;
       const summary = ev.payload?.summary || '';
       if (isChange) {
         // Change event: only initial send
@@ -55,7 +59,12 @@ exports.streamEvents = async (req, res) => {
         const payload = { routing_key, event_action: action, payload: ev.payload };
         sendTasks.push({ delay: scheduleOffsetMs, attempt: 'initial', summary, payload, url: PAGERDUTY_API_URL });
         // Repeats
-        const repeats = Array.isArray(ev.repeat_schedule) ? ev.repeat_schedule : [];
+        // Determine repeat schedule (nested payload or top-level)
+        const repeats = Array.isArray(ev.payload?.repeat_schedule)
+          ? ev.payload.repeat_schedule
+          : Array.isArray(ev.repeat_schedule)
+            ? ev.repeat_schedule
+            : [];
         for (const rpt of repeats) {
           const count = rpt.repeat_count || 0;
           const repOffsetMs = (rpt.repeat_offset || 0) * 1000;

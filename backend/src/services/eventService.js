@@ -66,10 +66,12 @@ exports.loadEvents = async (organization, filename) => {
 exports.computeScheduleSummary = (events) => {
   return events.map((ev) => {
     const summary = ev.payload?.summary || '';
-    const timing = ev.timing_metadata || {};
+    // Determine timing metadata from nested payload or top-level
+    const timing = ev.payload?.timing_metadata ?? ev.timing_metadata ?? {};
     const initial_offset = timing.schedule_offset || 0;
     // Normalize repeat_schedule: support array or numeric
-    let repeats = ev.repeat_schedule;
+    // Determine repeat schedule from nested payload or top-level
+    let repeats = ev.payload?.repeat_schedule ?? ev.repeat_schedule;
     let total_repeats = 0;
     let next_offset = null;
     if (Array.isArray(repeats)) {
@@ -100,8 +102,11 @@ exports.processEvents = async (events, routing_key) => {
   for (const ev of events) {
     // Determine if this is a change event (has its own routing_key or links)
     const isChange = ev.hasOwnProperty('routing_key') || ev.hasOwnProperty('links');
-    // Schedule offset for initial send (default to 0)
-    const scheduleOffsetMs = ((ev.timing_metadata && ev.timing_metadata.schedule_offset) || 0) * 1000;
+    // Determine schedule offset (nested payload or top-level)
+    const scheduleOffsetSec = ev.payload?.timing_metadata?.schedule_offset
+      ?? ev.timing_metadata?.schedule_offset
+      ?? 0;
+    const scheduleOffsetMs = scheduleOffsetSec * 1000;
     // Common summary for UI
     const summary = (ev.payload && ev.payload.summary) || '';
 
@@ -128,8 +133,10 @@ exports.processEvents = async (events, routing_key) => {
             .catch(error => resolve({ summary, error: error.message, attempt: 'initial', type: 'event' }));
         }, scheduleOffsetMs);
       }));
-      // Repeated sends if specified
-      const repeats = ev.repeat_schedule || [];
+      // Repeated sends if specified (nested payload or top-level)
+      const repeats = ev.payload?.repeat_schedule
+        ?? ev.repeat_schedule
+        ?? [];
       for (const rpt of repeats) {
         const count = rpt.repeat_count || 0;
         const repOffsetMs = (rpt.repeat_offset || 0) * 1000;
