@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import EventSender from './pages/EventSender';
 import Preview from './pages/Preview';
 import SopGenerator from './pages/SopGenerator';
+import Diagnostics from './pages/Diagnostics';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
@@ -71,6 +72,19 @@ function App() {
           >
             SOP Generator
           </NavLink>
+        <NavLink
+          to="/simulate-diagnostics"
+          style={({ isActive }) => ({
+            marginLeft: '1rem',
+            padding: '0.5rem 1rem',
+            textDecoration: 'none',
+            backgroundColor: isActive ? '#66BB6A' : 'transparent',
+            color: isActive ? '#00008B' : '#ffffff',
+            borderRadius: '4px'
+          })}
+        >
+          Simulate Diagnostics
+        </NavLink>
         </div>
         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ffffff' }}>
           PD Demo Agent
@@ -82,6 +96,7 @@ function App() {
           <Route path="/event-sender" element={<EventSender />} />
           <Route path="/preview" element={<Preview />} />
           <Route path="/sop-generator" element={<SopGenerator />} />
+          <Route path="/simulate-diagnostics" element={<Diagnostics />} />
         </Routes>
       </div>
     </Router>

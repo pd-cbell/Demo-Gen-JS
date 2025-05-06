@@ -141,6 +141,28 @@ gen_service/                # Flask-based demo generator service
 
 - **GET /preview/<org>/<filename>/postman**
   - Export events JSON as a Postman collection for the specified file.
+  
+**POST /api/generate_diagnostics**
+  - Request JSON body:
+    ```json
+    {
+      "org_name": "string",
+      "scenario": "major|partial|well",
+      "narrative_file": "<scenario>_<timestamp>.txt",
+      "files": ["<event_file.json>", "<change_events.json>"]
+    }
+    ```
+  - Response JSON:
+    ```json
+    {
+      "diagnostics": {
+        "scenario": "string",
+        "narrative": "<full narrative text>",
+        "diagnostics": [ ... ]
+      },
+      "diagnostics_filename": "diagnostics_<timestamp>.json"
+    }
+    ```
 
 ## Configuration
 

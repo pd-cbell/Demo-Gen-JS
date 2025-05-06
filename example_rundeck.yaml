@@ -1,0 +1,63 @@
+- defaultTab: nodes
+  description: Deployment Health
+  executionEnabled: true
+  group: AWS Demo
+  id: 69abaa50-7209-4d64-a7e1-cf741012a746
+  loglevel: INFO
+  maxMultipleExecutions: '0'
+  multipleExecutions: true
+  name:  CodePipeline‑Orchestration Diagnostics — Deployment Health
+  nodeFilterEditable: false
+  options:
+  - description: PagerDuty API token
+    hidden: true
+    label: API Token
+    name: api_token
+    secure: true
+    storagePath: keys/project/PDT-Bell/pdt-bell-labs-key
+    valueExposed: true
+  - label: PD Incident ID
+    name: pd_incident_id
+  - label: PD User
+    name: pd_user
+    value: rundeck@example.com
+  plugins:
+    ExecutionLifecycle:
+      Send Incident Output to Pagerduty: {}
+  runnerSelector:
+    runnerFilterMode: LOCAL
+    runnerFilterType: LOCAL_RUNNER
+  scheduleEnabled: true
+  schedules: []
+  sequence:
+    commands:
+    - configuration:
+        api_token: ${option.api_token}
+        email: ${option.pd_user}
+        incident_id: ${option.pd_incident_id}
+        note: |
+           CodePipeline‑Orchestration Diagnostics — Deployment Health - Check Action Log
+      description: Update Incident with Notes
+      nodeStep: false
+      plugins:
+        LogFilter:
+        - config:
+            customOutput: |-
+              CodePipeline Deployment Diagnostic Summary
+              ------------------------------------------
+              Pipeline Name            | Last Run   | Status | Failure Stage     | Notes
+              -------------------------|------------|--------|-------------------|----------------------------
+              global-deploy-main       | 08:14 UTC  | Failed | DeployToProd      | Role assumption error
+              mobile‑banking‑bluegreen | 08:11 UTC  | Failed | BuildArtifacts    | ECR pull timed‑out
+              trading‑engine‑hotfix    | 08:09 UTC  | Succeeded | —              | —
+              Heartbeat Latency        | 310 ms (warn) | Threshold = 300 ms
+              Average Deploy Timeout   | 15 min (crit) | Baseline = 8 min
+            filterName: ngnix logs
+            logOutputSettings: None
+            stepStatus: Success
+          type: pagerduty-incident-output-capture
+      type: pd-note-step
+    keepgoing: false
+    strategy: node-first
+  tags: 'automated,aws,diagnostics'
+  uuid: 69abaa50-7209-4d64-a7e1-cf741012a746

@@ -14,7 +14,7 @@ Copy
 Edit
 backend/
   src/index.js            # health route + router
-  src/routes/             # generate.js, events.js, preview.js
+  src/routes/             # generate.js, events.js, preview.js, sop.js, diagnostics.js
   src/services/           # eventService.js (faker/lodash templates)
 
 gen_service/
@@ -22,11 +22,12 @@ gen_service/
   utils.py                # get_llm(), retry helpers
   generators/             # major / partial / well prompts
   sop_generator.py        # Markdown runbook builder
-  app.py                  # Flask REST layer
+  diagnostic_generator.py # stub for diagnostics generation
+  app.py                  # Flask REST layer (endpoints: generate, generate_sop, generate_diagnostics)
 
 frontend/
   README.md               # explains dashboard/event-sender UI
-  src/…                   # CRA pages & components
+  src/…                   # CRA pages & components (Dashboard, EventSender, Preview, SopGenerator, Diagnostics)
 
 tests/smoke_test.sh       # **bash** end-to-end smoke script
 CODEBASE_SUMMARY.md       # one-page project map
@@ -48,6 +49,8 @@ GET /api/preview/<org>/<file> → pipe to jq for JSON parse.
 POST /api/generate_sop on first event.
 
 POST /api/events/send (dry-run) then open /api/events/stream and read first SSE line.
+
+POST /api/generate_diagnostics for simulated diagnostics (org, scenario, narrative, events).
 
 Greps backend logs to confirm no "temperature" param when model starts with o3 or o4.
 

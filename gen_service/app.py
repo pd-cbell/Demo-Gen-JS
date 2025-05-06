@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, send_from_directory, redirect
 import json
 from event_sender import event_sender, get_files, event_sender_summary, event_sender_send, load_event_file, PAGERDUTY_API_URL
 from sop_generator import generate_sop, generate_sop_blended
+from diagnostic_generator import generate_diagnostics
 import os
 import datetime
 import utils
@@ -548,6 +549,78 @@ def api_generate_sop_inline():
         return {'sop_text': sop_text}, 200
     except Exception as e:
         return {'message': f'Error generating SOP: {e}'}, 500
+
+@app.route('/api/generate_diagnostics', methods=['POST'])
+def api_generate_diagnostics():
+    """
+    Generate simulated diagnostics for selected event files.
+    Request JSON must include:
+      - org_name: string
+      - files: list of filenames under generated_files/{org}
+    """
+    data = request.get_json() or {}
+    org_name = data.get('org_name')
+    scenario = data.get('scenario')
+    narrative_file = data.get('narrative_file')
+    files = data.get('files')
+    # Validate input
+    if not org_name or not scenario or not narrative_file or not files or not isinstance(files, list):
+        return {'message': 'org_name, scenario, narrative_file, and list of files are required.'}, 400
+    # Sanitize org and locate folder
+    sanitized_org = sanitize_org(org_name)
+    org_folder = os.path.join(app.config['GENERATED_FOLDER'], sanitized_org)
+    # Sanitize org and locate folder
+    sanitized_org = sanitize_org(org_name)
+    org_folder = os.path.join(app.config['GENERATED_FOLDER'], sanitized_org)
+    # Load narrative content
+    narrative_path = os.path.join(org_folder, narrative_file)
+    if not os.path.isfile(narrative_path):
+        return {'message': f'Narrative file {narrative_file} not found for org {org_name}.'}, 404
+    try:
+        with open(narrative_path, 'r') as nf:
+            narrative_content = nf.read()
+    except Exception as e:
+        return {'message': f'Error reading narrative file: {e}'}, 500
+    # Collect events from specified files
+    events = []
+    for filename in files:
+        file_path = os.path.join(org_folder, filename)
+        if not os.path.isfile(file_path):
+            return {'message': f'File {filename} not found for org {org_name}.'}, 404
+        try:
+            parsed = load_event_file(sanitized_org, filename)
+        except Exception:
+            with open(file_path, 'r') as f:
+                parsed = json.load(f)
+        if isinstance(parsed, list):
+            events.extend(parsed)
+        else:
+            events.append(parsed)
+    # Generate multiple diagnostics job specs
+    try:
+        result = generate_diagnostics(org_name, events, scenario, narrative_content)
+        jobs = result.get('jobs', [])
+    except Exception as e:
+        app.logger.error(f'Error generating diagnostics: {e}')
+        return {'message': f'Error generating diagnostics: {e}'}, 500
+    # Save each job spec to its own YAML file
+    output = {'jobs': []}
+    timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    for job in jobs:
+        idx = job.get('index')
+        job_yaml = job.get('yaml', '')
+        # Use user-friendly filename: Event{n} - {scenario} Diagnostics.yaml
+        event_num = idx + 1
+        filename = f'Event{event_num} - {scenario} Diagnostics.yaml'
+        path = os.path.join(org_folder, filename)
+        try:
+            with open(path, 'w') as f:
+                f.write(job_yaml)
+        except Exception as e:
+            app.logger.error(f'Error saving diagnostics file {filename}: {e}')
+            continue
+        output['jobs'].append({'index': idx, 'filename': filename, 'yaml': job_yaml})
+    return output, 200
 
 if __name__ == '__main__':
     # Listen on all interfaces to allow Docker to map the port

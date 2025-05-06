@@ -20,6 +20,8 @@ app.options('/api/generate', cors(corsOptions));
 app.options('/api/events/send', cors(corsOptions));
 app.options('/api/generate_sop', cors(corsOptions));
 app.options('/api/generate_sop/blended', cors(corsOptions));
+// Preflight CORS for diagnostics
+app.options('/api/generate_diagnostics', cors(corsOptions));
 app.use(bodyParser.json());
 
 // Routes
@@ -30,6 +32,9 @@ app.use('/api/generate', generateRoutes);
 // SOP generation proxy
 const sopRoutes = require('./routes/sop');
 app.use('/api/generate_sop', sopRoutes);
+// Diagnostics proxy
+const diagnosticsRoutes = require('./routes/diagnostics');
+app.use('/api/generate_diagnostics', diagnosticsRoutes);
 // Preview and file browsing routes
 const previewRoutes = require('./routes/preview');
 app.use('/api', previewRoutes);
