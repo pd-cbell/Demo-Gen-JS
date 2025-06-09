@@ -1,3 +1,4 @@
+![image](https://github.com/user-attachments/assets/9c242ca4-4812-4c38-a17a-994772463e09)
 # PD Demo Generator
 
 This repository provides a complete end-to-end solution for generating incident narratives and event payloads, previewing and editing them, and sending live events to PagerDuty. It consists of three main components:
