@@ -34,6 +34,8 @@ def index():
         observability_tools = request.form.get('observability_tools')
         api_key = request.form.get('api_key')
         service_names = request.form.get('service_names')
+        unique_alerts = request.form.get('unique_alerts')
+        max_events = request.form.get('max_events')
         
         # Set default service names if none provided
         if not service_names:
@@ -57,7 +59,7 @@ def index():
             events = utils.generate_major_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details,
-                data.get('unique_alerts'), data.get('max_events')
+                unique_alerts, max_events
             )
             change_events = utils.generate_major_change_events(
                 org_name, api_key, itsm_tools, observability_tools,
@@ -75,7 +77,7 @@ def index():
             events = utils.generate_partial_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details,
-                data.get('unique_alerts'), data.get('max_events')
+                unique_alerts, max_events
             )
             change_events = utils.generate_partial_change_events(
                 org_name, api_key, itsm_tools, observability_tools,
@@ -93,7 +95,7 @@ def index():
             events = utils.generate_well_events(
                 org_name, api_key, itsm_tools, observability_tools,
                 outage_summary, service_names, incident_details,
-                data.get('unique_alerts'), data.get('max_events')
+                unique_alerts, max_events
             )
             # Generate change event for automated remediation
             change_events = utils.generate_well_change_events(
