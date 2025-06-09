@@ -29,7 +29,7 @@ frontend/
   README.md               # explains dashboard/event-sender UI
   src/…                   # CRA pages & components (Dashboard, EventSender, Preview, SopGenerator, Diagnostics)
 
-tests/smoke_test.sh       # **bash** end-to-end smoke script
+smoke_test.sh             # **bash** end-to-end smoke script
 CODEBASE_SUMMARY.md       # one-page project map
 README.md                 # root quick-start
 🔧 Local Run & Smoke Test (Bash)
@@ -37,7 +37,7 @@ bash
 Copy
 Edit
 docker compose up -d        # 3 services
-bash tests/smoke_test.sh    # curls all major routes
+bash smoke_test.sh          # curls all major routes
 Smoke script workflow ⬇︎
 
 /health check on backend.
@@ -90,7 +90,7 @@ bash
 Copy
 Edit
 curl -s http://localhost:5002/health
-bash tests/smoke_test.sh   # should exit 0
+bash smoke_test.sh   # should exit 0
 When coding:
 • Make focused edits via oboe.edit_file.
 • Keep code style & env-var rules.
