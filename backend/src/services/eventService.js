@@ -1,6 +1,5 @@
 const axios = require('axios');
 // Template engine and faker support
-const _ = require('lodash');
 const { faker } = require('@faker-js/faker');
 // Ensure faker.datatype.uuid() alias for backward compatibility
 if (!faker.datatype || typeof faker.datatype.uuid !== 'function') {
