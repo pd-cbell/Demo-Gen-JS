@@ -139,6 +139,25 @@ gen_service/                # Flask-based demo generator service
     }
     ```
 
+- **POST /api/generate_change_events**
+  - Request JSON body:
+    ```json
+    {
+      "org_name": "string",
+      "scenario": "major|partial|well",
+      "itsm_tools": "string (optional)",
+      "observability_tools": "string (optional)",
+      "service_names": "string (optional)"
+    }
+    ```
+  - Response JSON:
+    ```json
+    {
+      "filename": "<scenario>_change_events_<timestamp>.json",
+      "change_events": "<change events JSON>"
+    }
+    ```
+
 - **GET /preview/<org>/<filename>/postman**
   - Export events JSON as a Postman collection for the specified file.
   

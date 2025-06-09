@@ -411,6 +411,83 @@ def api_generate_custom():
         f.write(narrative)
     return {"filename": filename}, 200
 
+
+@app.route('/api/generate_change_events', methods=['POST'])
+def api_generate_change_events():
+    """Generate and save change events for a given scenario."""
+    data = request.get_json() or {}
+    org_name = data.get('org_name')
+    scenario = data.get('scenario')
+    itsm_tools = data.get('itsm_tools')
+    observability_tools = data.get('observability_tools')
+    service_names = data.get('service_names')
+    symptom = data.get('symptom')
+    root_cause = data.get('root_cause')
+
+    if not org_name or not scenario:
+        return {"message": "org_name and scenario are required."}, 400
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return {"message": "Server misconfiguration: missing API key."}, 500
+
+    # Default service names if not provided
+    if not service_names:
+        if scenario == 'major':
+            service_names = "User Authentication, API Nodes, Payment Processing"
+        elif scenario == 'partial':
+            service_names = "API Nodes, Database"
+        elif scenario == 'well':
+            service_names = "Storage"
+
+    # Generate narrative structure to provide context for change events
+    if scenario == 'major':
+        structured = utils.generate_major(
+            org_name, api_key, itsm_tools, observability_tools, service_names,
+            symptom, root_cause
+        )
+        outage_summary = structured['outage_summary']
+        incident_details = structured['incident_details']
+        change_events = utils.generate_major_change_events(
+            org_name, api_key, itsm_tools, observability_tools,
+            outage_summary, service_names, incident_details
+        )
+    elif scenario == 'partial':
+        structured = utils.generate_partial(
+            org_name, api_key, itsm_tools, observability_tools, service_names,
+            symptom, root_cause
+        )
+        outage_summary = structured['outage_summary']
+        incident_details = structured['incident_details']
+        change_events = utils.generate_partial_change_events(
+            org_name, api_key, itsm_tools, observability_tools,
+            outage_summary, service_names, incident_details
+        )
+    elif scenario == 'well':
+        structured = utils.generate_well(
+            org_name, api_key, itsm_tools, observability_tools, service_names,
+            symptom, root_cause
+        )
+        outage_summary = structured['outage_summary']
+        incident_details = structured['incident_details']
+        change_events = utils.generate_well_change_events(
+            org_name, api_key, itsm_tools, observability_tools,
+            outage_summary, service_names, incident_details
+        )
+    else:
+        return {"message": f"Invalid scenario: {scenario}"}, 400
+
+    # Persist change events to file
+    org_folder = os.path.join(app.config['GENERATED_FOLDER'], sanitize_org(org_name))
+    os.makedirs(org_folder, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    filename = f"{scenario}_change_events_{timestamp}.json"
+    filepath = os.path.join(org_folder, filename)
+    with open(filepath, 'w') as f:
+        f.write(change_events)
+
+    return {"filename": filename, "change_events": change_events}, 200
+
 @app.route('/preview/<org>/<filename>/postman', methods=['GET'])
 def export_postman(org, filename):
     """Export the events JSON as a Postman collection."""

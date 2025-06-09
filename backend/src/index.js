@@ -22,13 +22,16 @@ app.options('/api/generate_sop', cors(corsOptions));
 app.options('/api/generate_sop/blended', cors(corsOptions));
 // Preflight CORS for diagnostics
 app.options('/api/generate_diagnostics', cors(corsOptions));
+app.options('/api/generate_change_events', cors(corsOptions));
 app.use(bodyParser.json());
 
 // Routes
 const generateRoutes = require('./routes/generate');
 const eventRoutes = require('./routes/events');
+const changeEventRoutes = require('./routes/change_events');
 app.use('/api/events', eventRoutes);
 app.use('/api/generate', generateRoutes);
+app.use('/api/generate_change_events', changeEventRoutes);
 // SOP generation proxy
 const sopRoutes = require('./routes/sop');
 app.use('/api/generate_sop', sopRoutes);
