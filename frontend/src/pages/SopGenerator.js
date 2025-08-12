@@ -1,8 +1,7 @@
 // frontend/src/pages/SopGenerator.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const API_BASE = 'http://localhost:5002/api';
+import API_BASE from '../config';
 
 const SopGenerator = () => {
   const [organizations, setOrganizations] = useState([]);

@@ -1,6 +1,7 @@
 // frontend/src/pages/EventSender.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_BASE from '../config';
 
 const EventSender = () => {
   /**
@@ -55,7 +56,7 @@ const EventSender = () => {
 
   useEffect(() => {
     // Fetch organizations from backend API
-    axios.get('http://localhost:5002/api/organizations')
+    axios.get(`${API_BASE}/organizations`)
       .then((res) => setOrganizations(res.data.organizations))
       .catch((err) => console.error(err));
   }, []);
@@ -76,7 +77,7 @@ const EventSender = () => {
   const handleOrgChange = (e) => {
     setSelectedOrg(e.target.value);
     // Fetch event files for the selected organization
-    axios.get(`http://localhost:5002/api/files/${e.target.value}`)
+    axios.get(`${API_BASE}/files/${e.target.value}`)
       .then((res) => setFiles(res.data.files))
       .catch((err) => console.error(err));
   };
@@ -112,7 +113,7 @@ const EventSender = () => {
         routing_key: routingKey,
       });
       const source = new EventSource(
-        `http://localhost:5002/api/events/stream?${params.toString()}`
+        `${API_BASE}/events/stream?${params.toString()}`
       );
       source.addEventListener('schedule', (e) => {
         try {
@@ -134,7 +135,7 @@ const EventSender = () => {
         routing_key: changeRoutingKey,
       });
       const source = new EventSource(
-        `http://localhost:5002/api/events/stream?${params.toString()}`
+        `${API_BASE}/events/stream?${params.toString()}`
       );
       source.addEventListener('schedule', (e) => {
         try {
@@ -165,7 +166,7 @@ const EventSender = () => {
       routing_key: changeRoutingKey,
     });
     const source = new EventSource(
-      `http://localhost:5002/api/events/stream?${params.toString()}`
+      `${API_BASE}/events/stream?${params.toString()}`
     );
     source.addEventListener('schedule', (e) => {
       try {

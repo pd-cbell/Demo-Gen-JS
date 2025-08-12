@@ -1,6 +1,7 @@
 // frontend/src/pages/Preview.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_BASE from '../config';
 import SimpleMDE from 'react-simplemde-editor';
 // EasyMDE CSS (peer of react-simplemde-editor)
 import 'easymde/dist/easymde.min.css';
@@ -18,13 +19,13 @@ const Preview = () => {
 
   useEffect(() => {
     // Fetch list of organizations
-    axios.get('http://localhost:5002/api/organizations')
+    axios.get(`${API_BASE}/organizations`)
       .then((res) => setOrganizations(res.data.organizations))
       .catch((err) => console.error(err));
   }, []);
 
   const fetchFiles = (org) => {
-    axios.get(`http://localhost:5002/api/files/${org}`)
+    axios.get(`${API_BASE}/files/${org}`)
       .then((res) => setFiles(res.data.files))
       .catch((err) => console.error(err));
   };
@@ -36,7 +37,7 @@ const Preview = () => {
 
   const handleFileSelect = (file) => {
     setSelectedFile(file);
-    axios.get(`http://localhost:5002/api/preview/${selectedOrg}/${file}`)
+    axios.get(`${API_BASE}/preview/${selectedOrg}/${file}`)
       .then((res) => {
         setContent(res.data.content);
       })
@@ -44,7 +45,7 @@ const Preview = () => {
   };
 
   const handleSave = () => {
-    axios.post(`http://localhost:5002/api/preview/${selectedOrg}/${selectedFile}`, { content })
+    axios.post(`${API_BASE}/preview/${selectedOrg}/${selectedFile}`, { content })
       .then(() => alert('File saved successfully!'))
       .catch((err) => console.error(err));
   };
@@ -105,7 +106,7 @@ const Preview = () => {
               className="btn btn-primary ml-2"
               onClick={() =>
                 window.open(
-                  `http://localhost:5002/api/download/${selectedOrg}/${selectedFile}`,
+                  `${API_BASE}/download/${selectedOrg}/${selectedFile}`,
                   '_blank'
                 )
               }
@@ -118,7 +119,7 @@ const Preview = () => {
                 className="btn btn-info ml-2"
                 onClick={() =>
                   window.open(
-                    `http://localhost:5002/api/postman/${selectedOrg}/${selectedFile}`,
+                    `${API_BASE}/postman/${selectedOrg}/${selectedFile}`,
                     '_blank'
                   )
                 }
