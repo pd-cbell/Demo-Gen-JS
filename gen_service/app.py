@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, url_for, make_response
 import json
+from dotenv import load_dotenv
+load_dotenv()
 from event_sender import event_sender, get_files, event_sender_summary, event_sender_send, load_event_file, PAGERDUTY_API_URL
 from sop_generator import generate_sop, generate_sop_blended
 from diagnostic_generator import generate_diagnostics
@@ -16,6 +18,21 @@ app.add_url_rule('/get_files/<org>', 'get_files', get_files)
 app.add_url_rule('/event_sender', 'event_sender', event_sender, methods=['GET', 'POST'])
 app.add_url_rule('/event_sender/summary', 'event_sender_summary', event_sender_summary, methods=['POST'])
 app.add_url_rule('/event_sender/send', 'event_sender_send', event_sender_send, methods=['POST'])
+
+# Warn about missing environment variables
+REQUIRED_ENV = [
+    'PD_API_URL',
+    'PD_EVENTS_URL',
+    'PD_USER_TOKEN',
+    'PD_FROM_EMAIL',
+    'MONGODB_URI',
+    'BASE_URL',
+    'WEBHOOK_PUBLIC_BASE_URL',
+    'CRON_TIMEZONE',
+]
+for name in REQUIRED_ENV:
+    if not os.getenv(name):
+        app.logger.warning(f"Environment variable {name} is not set.")
 
 # Ensure the main generated_files folder exists
 if not os.path.exists(app.config['GENERATED_FOLDER']):

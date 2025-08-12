@@ -7,6 +7,23 @@ const app = express();
 // Use PORT env var or default to 5002 to avoid port conflicts on macOS
 const port = process.env.PORT || 5002;
 
+// Warn about missing environment variables but continue to boot
+const requiredEnv = [
+  'PD_API_URL',
+  'PD_EVENTS_URL',
+  'PD_USER_TOKEN',
+  'PD_FROM_EMAIL',
+  'MONGODB_URI',
+  'BASE_URL',
+  'WEBHOOK_PUBLIC_BASE_URL',
+  'CRON_TIMEZONE',
+];
+requiredEnv.forEach((name) => {
+  if (!process.env[name]) {
+    console.warn(`Environment variable ${name} is not set.`);
+  }
+});
+
 // Allow requests only from your frontend at http://localhost:3000
 // Allow the demo UI (Flask or React) to call this API
 const corsOptions = {

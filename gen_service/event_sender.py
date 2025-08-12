@@ -4,8 +4,14 @@ import logging
 import requests
 import time
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+from dotenv import load_dotenv
 
-PAGERDUTY_API_URL = "https://events.pagerduty.com/v2/enqueue"
+load_dotenv()
+
+PD_EVENTS_URL = os.getenv('PD_EVENTS_URL', 'https://events.pagerduty.com/v2/enqueue')
+if not os.getenv('PD_EVENTS_URL'):
+    logging.warning('PD_EVENTS_URL is not set. Using default https://events.pagerduty.com/v2/enqueue')
+PAGERDUTY_API_URL = PD_EVENTS_URL
 # Store generated files in the backend service directory so Node backend and Preview UIs share the same files
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend', 'generated_files'))
 GENERATED_FOLDER = BASE_DIR

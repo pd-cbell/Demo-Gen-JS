@@ -23,8 +23,12 @@ exports.sendEvents = async (req, res) => {
  */
 exports.streamEvents = async (req, res) => {
   const axios = require('axios');
-  const PAGERDUTY_API_URL = 'https://events.pagerduty.com/v2/enqueue';
-  const PAGERDUTY_CHANGE_URL = 'https://events.pagerduty.com/v2/change/enqueue';
+  const PD_EVENTS_URL = process.env.PD_EVENTS_URL || 'https://events.pagerduty.com/v2/enqueue';
+  if (!process.env.PD_EVENTS_URL) {
+    console.warn('PD_EVENTS_URL is not set. Using default https://events.pagerduty.com/v2/enqueue');
+  }
+  const PAGERDUTY_API_URL = PD_EVENTS_URL;
+  const PAGERDUTY_CHANGE_URL = PD_EVENTS_URL.replace('/enqueue', '/change/enqueue');
   // Initialize SSE headers before attempting to load events
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');

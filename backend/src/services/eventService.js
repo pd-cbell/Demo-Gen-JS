@@ -6,10 +6,13 @@ if (!faker.datatype || typeof faker.datatype.uuid !== 'function') {
   faker.datatype = faker.datatype || {};
   faker.datatype.uuid = (...args) => faker.string.uuid(...args);
 }
-// PagerDuty Events V2 API endpoint for incident events
-const PAGERDUTY_API_URL = "https://events.pagerduty.com/v2/enqueue";
-// PagerDuty Events V2 API endpoint for change events
-const PAGERDUTY_CHANGE_URL = "https://events.pagerduty.com/v2/change/enqueue";
+// PagerDuty Events V2 API endpoint for incident and change events
+const PD_EVENTS_URL = process.env.PD_EVENTS_URL || "https://events.pagerduty.com/v2/enqueue";
+if (!process.env.PD_EVENTS_URL) {
+  console.warn('PD_EVENTS_URL is not set. Using default https://events.pagerduty.com/v2/enqueue');
+}
+const PAGERDUTY_API_URL = PD_EVENTS_URL;
+const PAGERDUTY_CHANGE_URL = PD_EVENTS_URL.replace('/enqueue', '/change/enqueue');
 
 exports.loadEvents = async (organization, filename) => {
   // For now, read from a file or database as needed.
